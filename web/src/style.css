@@ -1,0 +1,536 @@
+:root {
+  --ink: #111114;
+  --ink-soft: #55555c;
+  --ink-faint: #9a9aa2;
+  --paper: #fbfbf9;
+  --line: #e4e4de;
+  --accent: #1d4fd7; /* the single blue of π */
+  --accent-soft: rgba(29, 79, 215, 0.08);
+  --mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+  --sans:
+    "Inter", -apple-system, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --serif: "Source Han Serif SC", "Noto Serif SC", "Songti SC", Georgia, serif;
+  --radius: 999px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.85;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* animatable angle for the TOC active-marker orbit sweep */
+@property --sweep {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ---------- shared chrome ---------- */
+
+.topbar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 32px;
+  pointer-events: none;
+}
+
+.topbar > * {
+  pointer-events: auto;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.brand-pi {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  font-family: var(--serif);
+  font-size: 17px;
+  color: var(--ink);
+  transition:
+    background 0.3s,
+    color 0.3s,
+    transform 0.3s;
+}
+
+.brand:hover .brand-pi {
+  background: var(--ink);
+  color: var(--paper);
+  transform: rotate(180deg);
+}
+
+/* ---------- geometric decorations ---------- */
+
+.ring {
+  position: absolute;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.ring-accent {
+  border-color: transparent;
+  border-top-color: var(--accent);
+}
+
+@keyframes orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.orbit {
+  animation: orbit 40s linear infinite;
+}
+
+.orbit-slow {
+  animation: orbit 90s linear infinite;
+}
+
+/* ---------- chapter typography ---------- */
+
+.chapter-body {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 24px 120px;
+}
+
+.chapter-body h1 {
+  font-family: var(--serif);
+  font-size: 34px;
+  line-height: 1.35;
+  margin: 0 0 48px;
+  letter-spacing: 0.01em;
+}
+
+/*
+ * heading hierarchy encoded as completeness of a circle — the level IS
+ * the fraction, π made literal:
+ *   h2 — 2π, a full ring with a solid blue core   (one complete turn)
+ *   h3 — π,  a half disc                          (half of the whole)
+ *   h4 — π/2, a quarter wedge in blue             (a quarter of the whole)
+ * wedges and halves are open fractions, never mistakable for list bullets.
+ */
+
+.chapter-body h2 {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 24px;
+  font-weight: 700;
+  margin: 96px 0 24px;
+  padding-bottom: 14px;
+  letter-spacing: 0.01em;
+  border-bottom: 1px solid var(--line);
+  scroll-margin-top: 72px;
+}
+
+.chapter-body h2:first-of-type {
+  margin-top: 48px;
+}
+
+/* 2π: ring with a solid blue core, inline with the heading text */
+.chapter-body h2::before {
+  content: "";
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent) 0 3px, transparent 3.5px);
+}
+
+.chapter-body h3 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 64px 0 16px;
+  scroll-margin-top: 72px;
+}
+
+/* π: left half of a disc — ◐ reads as "half" at any size */
+.chapter-body h3::before {
+  content: "";
+  flex: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: conic-gradient(transparent 0deg 180deg, var(--ink) 180deg 360deg);
+}
+
+.chapter-body h4 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15.5px;
+  font-weight: 700;
+  margin: 44px 0 12px;
+  color: #33333a;
+  scroll-margin-top: 72px;
+}
+
+/* π/2: quarter wedge — unmistakably a fraction of a circle, not a bullet */
+.chapter-body h4::before {
+  content: "";
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from -90deg,
+    var(--accent) 0deg 90deg,
+    transparent 90deg 360deg
+  );
+}
+
+/* hover anchor: a small open ring after the heading — deep link target */
+.head-anchor {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  margin-left: 4px;
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.chapter-body :is(h2, h3, h4):hover .head-anchor {
+  opacity: 0.45;
+}
+
+.head-anchor:hover {
+  opacity: 1;
+}
+
+/* evidence links — citations that lead to the source on GitHub */
+.chapter-body a.src-ref {
+  text-decoration: none;
+}
+
+.chapter-body a.src-ref > code {
+  text-decoration: underline dotted;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 3px;
+}
+
+/* plain-text citations (issue #N, PR #N) */
+.chapter-body a.src-ref:not(:has(> code)) {
+  color: inherit;
+  text-decoration: underline dotted;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 3px;
+}
+
+.chapter-body a.src-ref:hover,
+.chapter-body a.src-ref:hover code {
+  color: var(--accent);
+}
+
+/* citations inside listing comments stay the comment's quiet gray until hovered */
+pre .hljs-comment a.src-ref:not(:has(> code)) {
+  color: inherit;
+  text-decoration: none;
+}
+
+pre .hljs-comment a.src-ref:hover {
+  color: var(--accent);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.chapter-body p {
+  margin: 16px 0;
+  color: #26262b;
+}
+
+.chapter-body strong {
+  font-weight: 700;
+}
+
+.chapter-body code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  background: var(--accent-soft);
+  border-radius: 5px;
+  padding: 0.12em 0.4em;
+  color: #14349b;
+  word-break: break-word;
+}
+
+/*
+ * code blocks sit in the 720px column; when JS detects real overflow it
+ * arms hover expansion (after a short dwell). the target width is measured
+ * and transitioned in pixels — max-content cannot be interpolated and would
+ * just snap. the block lifts with a shadow so it reads as "pulled out of
+ * the page". light card, not a dark slab — code is part of the page.
+ */
+.chapter-body pre {
+  position: relative;
+  z-index: 0;
+  margin: 24px 0;
+  padding: 20px 22px;
+  background: #f2f2eb;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.7;
+  transition:
+    width 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.3s ease,
+    border-radius 0.3s ease;
+}
+
+.chapter-body pre.expanded {
+  z-index: 20;
+  max-width: calc(100vw - 96px);
+  box-shadow: 0 22px 60px -28px rgba(17, 17, 20, 0.35);
+  border-radius: 18px;
+}
+
+.chapter-body pre code,
+.pinned-card pre code {
+  background: none;
+  padding: 0;
+  color: #2c2c33;
+  font-size: inherit;
+}
+
+/* ---------- pin button: floats on each code block, pins it to the corner ---------- */
+
+.pin-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1.5px solid #b9b9b0;
+  background: rgba(251, 251, 249, 0.85);
+  color: #8a8a82;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.pin-btn svg {
+  position: absolute;
+  inset: 4px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chapter-body pre:hover .pin-btn {
+  opacity: 1;
+}
+
+.pin-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* pinned state: accent glyph, always visible */
+pre.pinned .pin-btn {
+  opacity: 1;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---------- highlight.js palette (minimal, on light card) ---------- */
+
+pre .hljs-comment,
+pre .hljs-quote {
+  color: #9a9aa2;
+  font-style: italic;
+}
+
+pre .hljs-keyword,
+pre .hljs-selector-tag,
+pre .hljs-literal {
+  color: #1d4fd7;
+}
+
+pre .hljs-string,
+pre .hljs-regexp {
+  color: #2e7d46;
+}
+
+pre .hljs-number,
+pre .hljs-symbol {
+  color: #a5631c;
+}
+
+pre .hljs-title,
+pre .hljs-title.function_ {
+  color: #111114;
+}
+
+pre .hljs-title.class_,
+pre .hljs-type,
+pre .hljs-built_in {
+  color: #0f7b6c;
+}
+
+pre .hljs-attr,
+pre .hljs-attribute,
+pre .hljs-variable,
+pre .hljs-template-variable,
+pre .hljs-params {
+  color: #55555c;
+}
+
+/* ---------- blockquotes ----------
+ * two kinds share the tag: quotations of source material (default — a
+ * quiet left rule, recessed) and the "为什么不去" questions (is-question —
+ * a lifted card with a ? ring). the class is stamped post-render from the
+ * question mark's wording. */
+
+.chapter-body blockquote {
+  margin: 28px 0;
+  padding: 2px 0 2px 22px;
+  border-left: 2px solid var(--line);
+  color: var(--ink-soft);
+  font-size: 15px;
+}
+
+.chapter-body blockquote p {
+  color: var(--ink-soft);
+}
+
+.chapter-body blockquote > :first-child {
+  margin-top: 0;
+}
+
+.chapter-body blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+.chapter-body blockquote strong {
+  color: var(--ink);
+}
+
+/* the "为什么不去" side notes: white card, blue ring, serif "?" */
+.chapter-body blockquote.is-question {
+  position: relative;
+  margin: 32px 0;
+  padding: 26px 28px 26px 66px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 16px 44px -30px rgba(17, 17, 20, 0.35);
+}
+
+.chapter-body blockquote.is-question::before {
+  content: "";
+  position: absolute;
+  left: 24px;
+  top: 27px;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+}
+
+.chapter-body blockquote.is-question::after {
+  content: "?";
+  position: absolute;
+  left: 24px;
+  top: 27px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.chapter-body ul,
+.chapter-body ol {
+  margin: 16px 0 16px 24px;
+}
+
+.chapter-body li {
+  margin: 8px 0;
+}
+
+.chapter-body li::marker {
+  color: var(--accent);
+}
+
+.chapter-body hr {
+  border: none;
+  height: 1px;
+  background: var(--line);
+  margin: 48px 0;
+}
+
+/* fade-up entrance */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rise {
+  animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
