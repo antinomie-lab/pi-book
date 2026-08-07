@@ -35,8 +35,9 @@ const PI_DIGITS = "3.14159265358979323846264338327950288";
         <em>book</em>
       </h1>
       <p class="lede">
-        一个被做成库的 agent 循环。<br />
-        克制、无状态、只说事件——像圆一样，周长即全部。
+        它不是 LangChain。<br />
+        一个拒绝成为框架的 agent 循环。<br />
+        模块即积木，组合即架构。
       </p>
       <p class="digits" aria-hidden="true">{{ PI_DIGITS }}</p>
     </section>
