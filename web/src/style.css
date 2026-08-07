@@ -38,11 +38,20 @@ body {
   color: #fff;
 }
 
-/* animatable angle for the TOC active-marker orbit sweep */
+/* animatable angle for orbit sweeps (TOC active marker, h2 hover) */
 @property --sweep {
   syntax: "<angle>";
   inherits: false;
   initial-value: 0deg;
+}
+
+@keyframes orbit-sweep {
+  from {
+    --sweep: 0deg;
+  }
+  to {
+    --sweep: 360deg;
+  }
 }
 
 a {
@@ -145,11 +154,18 @@ a {
 
 /*
  * heading hierarchy encoded as completeness of a circle — the level IS
- * the fraction, π made literal:
- *   h2 — 2π, a full ring with a solid blue core   (one complete turn)
- *   h3 — π,  a half disc                          (half of the whole)
- *   h4 — π/2, a quarter wedge in blue             (a quarter of the whole)
- * wedges and halves are open fractions, never mistakable for list bullets.
+ * the fraction, π made literal, and the fractions are moon phases:
+ *   h2 — 2π, the full moon: a solid blue disc
+ *   h3 — π,  the half moon: a half disc
+ *   h4 — π/2, the quarter moon: a blue quarter wedge
+ * (the chapter head above them is the orbit itself — a bead circling
+ * the ring.) halves and quarters are open fractions, never mistakable
+ * for list bullets; the full disc is safe only at h2's 20px.
+ *
+ * the marker IS the section anchor: a real <a> prepended post-render.
+ * hovering the heading turns the moon — h2 sweeps an orbit ring, the half
+ * disc flips 180°, the wedge advances 90° — and the click target is the
+ * marker itself.
  */
 
 .chapter-body h2 {
@@ -169,15 +185,35 @@ a {
   margin-top: 48px;
 }
 
-/* 2π: ring with a solid blue core, inline with the heading text */
-.chapter-body h2::before {
-  content: "";
+.head-anchor {
   flex: none;
-  width: 20px;
-  height: 20px;
-  border: 1.5px solid var(--ink);
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--accent) 0 3px, transparent 3.5px);
+  cursor: pointer;
+}
+
+/* 2π: the full moon — an SVG disc with paper-coloured craters, so the
+ * filled shape reads as a moon, not a list bullet; hover rotates it */
+.chapter-body h2 .head-anchor {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.chapter-body h2 .head-anchor svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.chapter-body h2 .moon-disc {
+  fill: var(--ink);
+}
+
+.chapter-body h2 .moon-crater {
+  fill: var(--paper);
+}
+
+.chapter-body h2:hover .head-anchor {
+  transform: rotate(120deg);
 }
 
 .chapter-body h3 {
@@ -190,14 +226,18 @@ a {
   scroll-margin-top: 72px;
 }
 
-/* π: left half of a disc — ◐ reads as "half" at any size */
-.chapter-body h3::before {
-  content: "";
-  flex: none;
+/* π: left half of a disc — ◐ reads as "half" at any size;
+ * hover flips the moon */
+.chapter-body h3 .head-anchor {
   width: 13px;
   height: 13px;
   border-radius: 50%;
   background: conic-gradient(transparent 0deg 180deg, var(--ink) 180deg 360deg);
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.chapter-body h3:hover .head-anchor {
+  transform: rotate(180deg);
 }
 
 .chapter-body h4 {
@@ -211,10 +251,9 @@ a {
   scroll-margin-top: 72px;
 }
 
-/* π/2: quarter wedge — unmistakably a fraction of a circle, not a bullet */
-.chapter-body h4::before {
-  content: "";
-  flex: none;
+/* π/2: quarter wedge — unmistakably a fraction of a circle, not a bullet;
+ * hover advances one phase */
+.chapter-body h4 .head-anchor {
   width: 12px;
   height: 12px;
   border-radius: 50%;
@@ -223,26 +262,11 @@ a {
     var(--accent) 0deg 90deg,
     transparent 90deg 360deg
   );
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* hover anchor: a small open ring after the heading — deep link target */
-.head-anchor {
-  flex: none;
-  width: 9px;
-  height: 9px;
-  margin-left: 4px;
-  border: 1.5px solid var(--accent);
-  border-radius: 50%;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.chapter-body :is(h2, h3, h4):hover .head-anchor {
-  opacity: 0.45;
-}
-
-.head-anchor:hover {
-  opacity: 1;
+.chapter-body h4:hover .head-anchor {
+  transform: rotate(90deg);
 }
 
 /* evidence links — citations that lead to the source on GitHub */

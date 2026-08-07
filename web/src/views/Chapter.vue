@@ -72,28 +72,49 @@ const progress = ref(0);
 const toc = ref([]);
 const activeId = ref("");
 
+/* the full moon for h2 markers — paper-coloured craters keep the solid
+ * disc from reading as a list bullet. Shared by body headings (prepended
+ * into the anchor by buildToc) and the floating TOC (v-html). */
+const FULL_MOON_SVG =
+  '<svg viewBox="0 0 16 16" aria-hidden="true">' +
+  '<circle class="moon-disc" cx="8" cy="8" r="7.2"/>' +
+  '<circle class="moon-crater" cx="5.6" cy="6.2" r="1.6"/>' +
+  '<circle class="moon-crater" cx="10.4" cy="10.4" r="1.1"/>' +
+  "</svg>";
+
 function buildToc() {
   const heads = bodyRef.value?.querySelectorAll("h2[id], h3[id], h4[id]") ?? [];
   toc.value = [...heads].map((h) => {
-    // hover anchor affordance — a small ring after the heading text
+    // the level marker IS the anchor — a real <a> as the heading's first
+    // child, so the moon-phase hover morph lives on a clickable element
     const a = document.createElement("a");
     a.className = "head-anchor";
     a.href = `#${h.id}`;
     a.title = "本节链接";
     a.setAttribute("aria-label", "本节链接");
-    h.appendChild(a);
+    // h2's moon needs punched-out craters — beyond what CSS shapes can do
+    if (h.tagName === "H2") a.innerHTML = FULL_MOON_SVG;
+    h.prepend(a);
     return { id: h.id, text: h.textContent, level: h.tagName.toLowerCase() };
   });
 }
 
 function updateActive() {
   const y = window.scrollY + 140;
-  let current = toc.value[0]?.id ?? "";
+  let current = "";
   for (const item of toc.value) {
     const el = document.getElementById(item.id);
     if (el && el.offsetTop <= y) current = item.id;
   }
-  activeId.value = current;
+  // TOC highlight keeps a sensible default before the first heading…
+  activeId.value = current || (toc.value[0]?.id ?? "");
+  // …but the address bar mirrors the section actually under the reader's
+  // eye, no click needed. replaceState: zero history entries, no scroll.
+  const base = window.location.pathname + window.location.search;
+  const target = current ? `${base}#${encodeURIComponent(current)}` : base;
+  if (window.location.href !== new URL(target, window.location.origin).href) {
+    history.replaceState(null, "", target);
+  }
 }
 
 /* land on a deep link (#anchor) after the markdown has rendered */
@@ -500,7 +521,11 @@ watch(html, async () => {
         :class="[item.level, { active: item.id === activeId }]"
         :href="`#${item.id}`"
       >
-        <span class="toc-marker" aria-hidden="true"></span>
+        <span
+          class="toc-marker"
+          aria-hidden="true"
+          v-html="item.level === 'h2' ? FULL_MOON_SVG : ''"
+        ></span>
         <span class="toc-text">{{ item.text }}</span>
       </a>
     </nav>
@@ -511,7 +536,10 @@ watch(html, async () => {
       </p>
       <div class="chapter-head-row">
         <span class="head-circle" aria-hidden="true">
-          <span class="head-circle-dot"></span>
+          <span class="head-circle-num">{{ chapter.dial ?? chapter.id }}</span>
+          <span class="head-circle-orbit">
+            <span class="head-circle-dot"></span>
+          </span>
         </span>
         <div>
           <h1 class="chapter-title">{{ chapter.title }}</h1>
@@ -694,6 +722,7 @@ watch(html, async () => {
 }
 
 .head-circle {
+  position: relative;
   flex: none;
   width: 72px;
   height: 72px;
@@ -703,24 +732,29 @@ watch(html, async () => {
   place-items: center;
 }
 
-.head-circle-dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--accent);
-  animation: pulse 2.4s ease-in-out infinite;
+/* chapter number at the center; the blue bead rides the circumference —
+ * one full orbit = one chapter, against the fixed cores of h2 sections */
+.head-circle-num {
+  font-family: var(--serif);
+  font-size: 20px;
+  color: var(--ink);
 }
 
-@keyframes pulse {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(0.55);
-    opacity: 0.6;
-  }
+.head-circle-orbit {
+  position: absolute;
+  inset: 0;
+  animation: orbit 14s linear infinite;
+}
+
+.head-circle-dot {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  translate: -50% -50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
 }
 
 .chapter-title {
@@ -922,11 +956,29 @@ watch(html, async () => {
   width: 13px;
   height: 13px;
   margin-top: 3px;
-  border: 1.5px solid currentColor;
   border-radius: 50%;
-  /* one shade darker than the link text: a 1.5px ring in --ink-faint
-   * loses its left edge to antialiasing on 1x displays */
+  /* h3/h4 shapes are painted with backgrounds below; h2's crater moon
+   * arrives as inline SVG (v-html), so its span stays transparent */
+  background: currentColor;
   color: #77777e;
+}
+
+.toc-link.h2 .toc-marker {
+  background: none;
+}
+
+.toc-marker :deep(svg) {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.toc-marker :deep(.moon-disc) {
+  fill: currentColor;
+}
+
+.toc-marker :deep(.moon-crater) {
+  fill: var(--paper);
 }
 
 .toc-link:hover .toc-marker {
@@ -937,11 +989,10 @@ watch(html, async () => {
   color: var(--accent);
 }
 
-/* markers are single shapes — ring / half disc / small ring — no border
- * on filled ones: a transparent border makes the gradient tile (origin
- * padding-box + repeat) bleed into the ring area and clip weirdly */
+/* markers are single shapes — crater moon / half disc / quarter wedge —
+ * no border on filled ones: a transparent border makes the gradient tile
+ * (origin padding-box + repeat) bleed and clip weirdly */
 .toc-link.h3 .toc-marker {
-  border: none;
   /* ◐ left half — the classic small-size "half circle" glyph */
   background: conic-gradient(
     transparent 0deg 180deg,
@@ -950,10 +1001,9 @@ watch(html, async () => {
 }
 
 /* h4: the quarter wedge, exactly as in the body headings — its straight
- * edges read as a slice of circle, where any full ring or dot this small
+ * edges read as a slice of circle, where a full dot at this indent
  * would read as a list bullet */
 .toc-link.h4 .toc-marker {
-  border: none;
   background: conic-gradient(
     from -90deg,
     currentColor 0deg 90deg,
