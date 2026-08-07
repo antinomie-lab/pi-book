@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "antinomie-books-gateway",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-08",
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "books.antinomie.org/*",
+      "zone_name": "antinomie.org"
+    }
+  ]
+}
