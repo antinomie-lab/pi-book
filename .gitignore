@@ -1,3 +1,4 @@
 .DS_Store
+.wrangler/
 web/node_modules
 web/dist
