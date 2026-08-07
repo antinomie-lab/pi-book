@@ -250,10 +250,16 @@ a {
   text-decoration: none;
 }
 
-.chapter-body a.src-ref > code {
+/* any link wrapping inline code carries the citation affordance,
+ * whether it was stamped by the linkifier or written by hand */
+.chapter-body a:has(> code) > code {
   text-decoration: underline dotted;
   text-decoration-color: var(--accent);
   text-underline-offset: 3px;
+}
+
+.chapter-body a:has(> code):hover > code {
+  color: var(--accent);
 }
 
 /* plain-text citations (issue #N, PR #N) */

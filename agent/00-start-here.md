@@ -39,7 +39,7 @@ async function simpleLoop(messages, model, tools) {
 
 还有些章节，一进门就替你钉好了一段代码——比如第 2 章的 runLoop 骨架。那不是装饰，是那一章的路标：后文的解读会反复回指它，你随时抬头就能对照，不会在长章里迷路。
 
-如果某段话你想亲眼看看原文，点一下出处——书里的每个论断，都链回仓库里它出生的那一行。这本书自己也躺在仓库里：[这一页的源文件](https://github.com/TODO-owner/pi-book/blob/main/agent/00-start-here.md)，写岔了欢迎来挑错。
+如果某段话你想亲眼看看原文，点一下出处——书里的每个论断，都链回仓库里它出生的那一行。这本书自己也躺在仓库里：[`agent/00-start-here.md:42`](https://github.com/antinomie-lab/pi-book/blob/main/agent/00-start-here.md#L42)，写岔了欢迎来挑错。
 
 ## 一句嘱咐
 
