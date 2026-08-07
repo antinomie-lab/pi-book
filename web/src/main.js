@@ -6,7 +6,7 @@ import Chapter from "./views/Chapter.vue";
 import "./style.css";
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: "/", name: "home", component: Home },
     { path: "/chapter/:id", name: "chapter", component: Chapter },
