@@ -6,12 +6,64 @@
   --line: #e4e4de;
   --accent: #1d4fd7; /* the single blue of π */
   --accent-soft: rgba(29, 79, 215, 0.08);
+  --body-text: #26262b;
+  --minor-heading: #33333a;
+  --inline-code: #14349b;
+  --code-surface: #f2f2eb;
+  --code-text: #2c2c33;
+  --surface: #fff;
+  --surface-glass: rgba(255, 255, 255, 0.7);
+  --paper-glass: rgba(251, 251, 249, 0.85);
+  --control-border: #b9b9b0;
+  --control-muted: #8a8a82;
+  --toc-marker: #77777e;
+  --shadow: rgba(17, 17, 20, 0.35);
+  --shadow-strong: rgba(17, 17, 20, 0.4);
+  --syntax-comment: #9a9aa2;
+  --syntax-keyword: #1d4fd7;
+  --syntax-string: #2e7d46;
+  --syntax-number: #a5631c;
+  --syntax-title: #111114;
+  --syntax-type: #0f7b6c;
+  --syntax-variable: #55555c;
+  color-scheme: light;
   --mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
   --sans:
     "Inter", -apple-system, "PingFang SC", "Hiragino Sans GB",
     "Microsoft YaHei", "Noto Sans SC", sans-serif;
   --serif: "Source Han Serif SC", "Noto Serif SC", "Songti SC", Georgia, serif;
   --radius: 999px;
+}
+
+:root[data-theme="dark"] {
+  --ink: #ecece7;
+  --ink-soft: #b7b7b1;
+  --ink-faint: #85858b;
+  --paper: #111114;
+  --line: #303034;
+  --accent: #7da2ff;
+  --accent-soft: rgba(125, 162, 255, 0.15);
+  --body-text: #d8d8d3;
+  --minor-heading: #d4d4cf;
+  --inline-code: #a9c0ff;
+  --code-surface: #1b1b1e;
+  --code-text: #d6d6d1;
+  --surface: #19191c;
+  --surface-glass: rgba(25, 25, 28, 0.78);
+  --paper-glass: rgba(17, 17, 20, 0.86);
+  --control-border: #45454a;
+  --control-muted: #929298;
+  --toc-marker: #9a9aa0;
+  --shadow: rgba(0, 0, 0, 0.55);
+  --shadow-strong: rgba(0, 0, 0, 0.7);
+  --syntax-comment: #85858b;
+  --syntax-keyword: #8eafff;
+  --syntax-string: #83c995;
+  --syntax-number: #dfa667;
+  --syntax-title: #ecece7;
+  --syntax-type: #6fcbbb;
+  --syntax-variable: #b7b7b1;
+  color-scheme: dark;
 }
 
 * {
@@ -31,11 +83,14 @@ body {
   font-size: 16px;
   line-height: 1.85;
   -webkit-font-smoothing: antialiased;
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease;
 }
 
 ::selection {
   background: var(--accent);
-  color: #fff;
+  color: var(--paper);
 }
 
 /* animatable angle for orbit sweeps (TOC active marker, h2 hover) */
@@ -106,6 +161,54 @@ a {
   background: var(--ink);
   color: var(--paper);
   transform: rotate(180deg);
+}
+
+.theme-toggle {
+  position: fixed;
+  top: 18px;
+  right: 32px;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper-glass);
+  color: var(--ink);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition:
+    background-color 0.3s,
+    color 0.3s,
+    transform 0.3s;
+}
+
+.theme-toggle.on-home {
+  right: 78px;
+}
+
+.theme-toggle:hover {
+  background: var(--ink);
+  color: var(--paper);
+  transform: rotate(180deg);
+}
+
+.theme-orb {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  background: currentColor;
+  transition:
+    background-color 0.3s,
+    box-shadow 0.3s;
+}
+
+.theme-toggle.is-dark .theme-orb {
+  background: transparent;
+  box-shadow: inset -4px 0 0 currentColor;
 }
 
 /* ---------- geometric decorations ---------- */
@@ -247,7 +350,7 @@ a {
   font-size: 15.5px;
   font-weight: 700;
   margin: 44px 0 12px;
-  color: #33333a;
+  color: var(--minor-heading);
   scroll-margin-top: 72px;
 }
 
@@ -313,7 +416,7 @@ pre .hljs-comment a.src-ref:hover {
 
 .chapter-body p {
   margin: 16px 0;
-  color: #26262b;
+  color: var(--body-text);
 }
 
 .chapter-body strong {
@@ -326,7 +429,7 @@ pre .hljs-comment a.src-ref:hover {
   background: var(--accent-soft);
   border-radius: 5px;
   padding: 0.12em 0.4em;
-  color: #14349b;
+  color: var(--inline-code);
   word-break: break-word;
 }
 
@@ -342,7 +445,7 @@ pre .hljs-comment a.src-ref:hover {
   z-index: 0;
   margin: 24px 0;
   padding: 20px 22px;
-  background: #f2f2eb;
+  background: var(--code-surface);
   border: 1px solid var(--line);
   border-radius: 14px;
   overflow-x: auto;
@@ -357,7 +460,7 @@ pre .hljs-comment a.src-ref:hover {
 .chapter-body pre.expanded {
   z-index: 20;
   max-width: calc(100vw - 96px);
-  box-shadow: 0 22px 60px -28px rgba(17, 17, 20, 0.35);
+  box-shadow: 0 22px 60px -28px var(--shadow);
   border-radius: 18px;
 }
 
@@ -365,7 +468,7 @@ pre .hljs-comment a.src-ref:hover {
 .pinned-card pre code {
   background: none;
   padding: 0;
-  color: #2c2c33;
+  color: var(--code-text);
   font-size: inherit;
 }
 
@@ -380,9 +483,9 @@ pre .hljs-comment a.src-ref:hover {
   height: 24px;
   padding: 0;
   border-radius: 50%;
-  border: 1.5px solid #b9b9b0;
-  background: rgba(251, 251, 249, 0.85);
-  color: #8a8a82;
+  border: 1.5px solid var(--control-border);
+  background: var(--paper-glass);
+  color: var(--control-muted);
   cursor: pointer;
   opacity: 0;
   transition:
@@ -421,35 +524,35 @@ pre.pinned .pin-btn {
 
 pre .hljs-comment,
 pre .hljs-quote {
-  color: #9a9aa2;
+  color: var(--syntax-comment);
   font-style: italic;
 }
 
 pre .hljs-keyword,
 pre .hljs-selector-tag,
 pre .hljs-literal {
-  color: #1d4fd7;
+  color: var(--syntax-keyword);
 }
 
 pre .hljs-string,
 pre .hljs-regexp {
-  color: #2e7d46;
+  color: var(--syntax-string);
 }
 
 pre .hljs-number,
 pre .hljs-symbol {
-  color: #a5631c;
+  color: var(--syntax-number);
 }
 
 pre .hljs-title,
 pre .hljs-title.function_ {
-  color: #111114;
+  color: var(--syntax-title);
 }
 
 pre .hljs-title.class_,
 pre .hljs-type,
 pre .hljs-built_in {
-  color: #0f7b6c;
+  color: var(--syntax-type);
 }
 
 pre .hljs-attr,
@@ -457,7 +560,7 @@ pre .hljs-attribute,
 pre .hljs-variable,
 pre .hljs-template-variable,
 pre .hljs-params {
-  color: #55555c;
+  color: var(--syntax-variable);
 }
 
 /* ---------- blockquotes ----------
@@ -497,8 +600,8 @@ pre .hljs-params {
   padding: 26px 28px 26px 66px;
   border: 1px solid var(--line);
   border-radius: 22px;
-  background: #fff;
-  box-shadow: 0 16px 44px -30px rgba(17, 17, 20, 0.35);
+  background: var(--surface);
+  box-shadow: 0 16px 44px -30px var(--shadow);
 }
 
 .chapter-body blockquote.is-question::before {

@@ -216,7 +216,7 @@ const PI_DIGITS = "3.14159265358979323846264338327950288";
   align-items: center;
   gap: 20px;
   padding: 18px 24px;
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--surface-glass);
   backdrop-filter: blur(6px);
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -229,7 +229,7 @@ const PI_DIGITS = "3.14159265358979323846264338327950288";
 .toc-item:hover {
   border-color: var(--ink);
   transform: translateY(-3px);
-  box-shadow: 0 14px 40px -18px rgba(17, 17, 20, 0.25);
+  box-shadow: 0 14px 40px -18px var(--shadow);
 }
 
 .toc-num {
