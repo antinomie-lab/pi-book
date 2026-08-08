@@ -665,7 +665,7 @@ watch(html, async () => {
   height: 64px;
   display: grid;
   place-items: center;
-  background: rgba(251, 251, 249, 0.85);
+  background: var(--paper-glass);
   backdrop-filter: blur(8px);
   border-radius: 50%;
   transition: transform 0.3s;
@@ -799,8 +799,8 @@ watch(html, async () => {
   max-width: 100%;
   border-radius: 14px;
   border: 1px solid var(--line);
-  background: #f2f2eb;
-  box-shadow: 0 14px 36px -20px rgba(17, 17, 20, 0.3);
+  background: var(--code-surface);
+  box-shadow: 0 14px 36px -20px var(--shadow);
   max-height: 116px;
   overflow: hidden;
   transition:
@@ -815,14 +815,14 @@ watch(html, async () => {
   position: absolute;
   inset: auto 0 0 0;
   height: 40px;
-  background: linear-gradient(transparent, #f2f2eb 80%);
+  background: linear-gradient(transparent, var(--code-surface) 80%);
   pointer-events: none;
   transition: opacity 0.25s ease;
 }
 
 .pinned-card.open {
   max-width: min(52vw, 900px); /* lift the stack-width cap while open */
-  box-shadow: 0 24px 64px -24px rgba(17, 17, 20, 0.4);
+  box-shadow: 0 24px 64px -24px var(--shadow-strong);
 }
 
 .pinned-card.open::after {
@@ -852,7 +852,7 @@ watch(html, async () => {
   padding: 0;
   border-radius: 50%;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--surface-glass);
   color: var(--ink-soft);
   font-size: 13px;
   line-height: 1;
@@ -960,7 +960,7 @@ watch(html, async () => {
   /* h3/h4 shapes are painted with backgrounds below; h2's crater moon
    * arrives as inline SVG (v-html), so its span stays transparent */
   background: currentColor;
-  color: #77777e;
+  color: var(--toc-marker);
 }
 
 .toc-link.h2 .toc-marker {
