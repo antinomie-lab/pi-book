@@ -181,8 +181,7 @@ a {
   cursor: pointer;
   transition:
     background-color 0.3s,
-    color 0.3s,
-    transform 0.3s;
+    color 0.3s;
 }
 
 .theme-toggle.on-home {
@@ -192,7 +191,6 @@ a {
 .theme-toggle:hover {
   background: var(--ink);
   color: var(--paper);
-  transform: rotate(180deg);
 }
 
 .theme-orb {
@@ -200,15 +198,12 @@ a {
   height: 14px;
   border: 1.5px solid currentColor;
   border-radius: 50%;
-  background: currentColor;
-  transition:
-    background-color 0.3s,
-    box-shadow 0.3s;
+  box-shadow: inset -4px 0 0 currentColor;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.theme-toggle.is-dark .theme-orb {
-  background: transparent;
-  box-shadow: inset -4px 0 0 currentColor;
+.theme-toggle:hover .theme-orb {
+  transform: rotate(180deg);
 }
 
 /* ---------- geometric decorations ---------- */
