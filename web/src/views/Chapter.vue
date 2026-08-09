@@ -6,7 +6,8 @@ import hljs from "highlight.js/lib/core";
 import typescript from "highlight.js/lib/languages/typescript";
 import json from "highlight.js/lib/languages/json";
 import bash from "highlight.js/lib/languages/bash";
-import { chapters, getChapter } from "../chapters";
+import { getChapter, getChapters } from "../chapters";
+import { useLocale } from "../i18n/locale.js";
 
 hljs.registerLanguage("typescript", typescript);
 hljs.registerLanguage("json", json);
@@ -56,14 +57,18 @@ md.core.ruler.push("heading-anchors", (state) => {
 });
 
 const route = useRoute();
+const { locale, t } = useLocale();
+const chapters = computed(() => getChapters(locale.value));
 const chapter = computed(
-  () => getChapter(route.params.id) ?? chapters[0],
+  () => getChapter(route.params.id, locale.value) ?? chapters.value[0],
 );
 const html = computed(() => md.render(chapter.value.md));
 
-const idx = computed(() => chapters.indexOf(chapter.value));
-const prev = computed(() => chapters[idx.value - 1]);
-const next = computed(() => chapters[idx.value + 1]);
+const idx = computed(() =>
+  chapters.value.findIndex((c) => c.id === chapter.value.id),
+);
+const prev = computed(() => chapters.value[idx.value - 1]);
+const next = computed(() => chapters.value[idx.value + 1]);
 
 /* scroll progress → circular dial (one full circumference per chapter) */
 const progress = ref(0);
@@ -90,8 +95,8 @@ function buildToc() {
     const a = document.createElement("a");
     a.className = "head-anchor";
     a.href = `#${h.id}`;
-    a.title = "本节链接";
-    a.setAttribute("aria-label", "本节链接");
+    a.title = t.value.sectionLink;
+    a.setAttribute("aria-label", t.value.sectionLink);
     // h2's moon needs punched-out craters — beyond what CSS shapes can do
     if (h.tagName === "H2") a.innerHTML = FULL_MOON_SVG;
     h.prepend(a);
@@ -316,8 +321,8 @@ function setupCodeBlocks() {
     const pin = document.createElement("button");
     pin.type = "button";
     pin.className = "pin-btn";
-    pin.title = "钉在右上角";
-    pin.setAttribute("aria-label", "钉在右上角");
+    pin.title = t.value.pinCode;
+    pin.setAttribute("aria-label", t.value.pinCode);
     // thumbtack glyph: Lucide "pin" (ISC), verbatim
     pin.innerHTML =
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>';
@@ -434,12 +439,14 @@ function linkifySourceRefs(root) {
   }
 }
 
-/* "为什么不去" questions get the card + ? ring; every other blockquote
- * stays a plain quotation with a left rule */
+/* "为什么不去" / Why / Por qué questions get the card + ? ring */
 function classifyBlockquotes(root) {
+  const prefixes = t.value.questionPrefixes ?? ["为什么"];
   for (const bq of root.querySelectorAll("blockquote")) {
     const first = bq.firstElementChild?.textContent.trim() ?? "";
-    if (first.startsWith("为什么")) bq.classList.add("is-question");
+    if (prefixes.some((p) => first.startsWith(p))) {
+      bq.classList.add("is-question");
+    }
   }
 }
 
@@ -455,11 +462,11 @@ onMounted(() =>
   }),
 );
 onUnmounted(teardownCodeBlocks);
-watch(html, async () => {
+watch([html, locale], async () => {
   teardownCodeBlocks();
   pinned.value = [];
   pinnedEls.clear();
-  for (const t of pinTimers.values()) clearTimeout(t);
+  for (const timer of pinTimers.values()) clearTimeout(timer);
   pinTimers.clear();
   await nextTick();
   buildToc();
@@ -475,7 +482,7 @@ watch(html, async () => {
 <template>
   <main class="chapter">
     <!-- fixed circular progress dial -->
-    <RouterLink to="/" class="dial" title="回到目录">
+    <RouterLink to="/" class="dial" :title="t.backToToc">
       <svg viewBox="0 0 64 64" class="dial-svg">
         <circle cx="32" cy="32" :r="R" class="dial-bg" />
         <circle
@@ -501,7 +508,7 @@ watch(html, async () => {
         <button
           class="pinned-close"
           type="button"
-          aria-label="取消钉住"
+          :aria-label="t.unpin"
           @click="unpin(p.id)"
         >
           ×
@@ -512,8 +519,8 @@ watch(html, async () => {
     </div>
 
     <!-- floating table of contents -->
-    <nav v-if="toc.length" class="toc-rail" aria-label="本节目录">
-      <p class="toc-rail-title">目录</p>
+    <nav v-if="toc.length" class="toc-rail" :aria-label="t.tocRail">
+      <p class="toc-rail-title">{{ t.tocTitle }}</p>
       <a
         v-for="item in toc"
         :key="item.id"
@@ -532,7 +539,7 @@ watch(html, async () => {
 
     <header class="chapter-head rise">
       <p class="chapter-kicker">
-        {{ chapter.kicker ?? `第 ${chapter.num} 章` }}
+        {{ chapter.kicker ?? t.chapterLabel(chapter.num) }}
       </p>
       <div class="chapter-head-row">
         <span class="head-circle" aria-hidden="true">
@@ -550,7 +557,7 @@ watch(html, async () => {
 
     <article ref="bodyRef" class="chapter-body rise" v-html="html"></article>
 
-    <nav class="chapter-nav" aria-label="章节导航">
+    <nav class="chapter-nav" :aria-label="t.chapterNav">
       <RouterLink
         v-if="prev"
         :to="`/chapter/${prev.id}`"
@@ -559,7 +566,7 @@ watch(html, async () => {
         <span class="nav-circle" aria-hidden="true">←</span>
         <span class="nav-meta">
           <span class="nav-kicker">
-            上一章 · {{ prev.kicker ?? `第 ${prev.num} 章` }}
+            {{ t.prevChapter }} · {{ prev.kicker ?? t.chapterLabel(prev.num) }}
           </span>
           <span class="nav-title">{{ prev.title }}</span>
         </span>
@@ -572,7 +579,7 @@ watch(html, async () => {
       >
         <span class="nav-meta">
           <span class="nav-kicker">
-            下一章 · {{ next.kicker ?? `第 ${next.num} 章` }}
+            {{ t.nextChapter }} · {{ next.kicker ?? t.chapterLabel(next.num) }}
           </span>
           <span class="nav-title">{{ next.title }}</span>
         </span>

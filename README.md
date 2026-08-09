@@ -1,17 +1,31 @@
 # pi-explore
 
+Workspace for a Chinese architecture book about [pi](https://github.com/earendil-works/pi)'s `packages/agent`.
+
+> An agent loop, packaged as a library.
+
+The book starts from the code and explains how `@earendil-works/pi-agent-core` is put together: what it promises, what it refuses, and where the fulcrums are. The whole book tracks pi `main` at commit `cd20a8d2e`. Citations use `file:line` form, each with an inline quotation—so you can verify any claim without opening an editor.
+
+**Languages:** Chinese is the source of truth under [`agent/`](agent/README.md). English and Spanish translations live in [`agent/en/`](agent/en/README.md) and [`agent/es/`](agent/es/README.md). The web reader has a language switcher (中文 / English / Español).
+
+中文说明见下文。
+
+---
+
 一本中文架构书的工作区。对象是 [pi](https://github.com/earendil-works/pi) 仓库的 `packages/agent`。
 
 > 一个 agent 循环，被做成一个库。
 
 这本书从代码出发，讲清楚 `@earendil-works/pi-agent-core` 是怎么搭起来的：它承诺什么、拒绝什么、支点在哪里。全书对应 pi 仓库 main 分支的 commit `cd20a8d2e`。代码引用写成 `文件:行号`，每个引用就地附上引文——读者不需要打开编辑器，就能核对书里任何一处论断。
 
+**多语言：** 中文原稿在 [`agent/`](agent/README.md)（唯一内容源头）。英文与西班牙文译本在 [`agent/en/`](agent/en/README.md) 与 [`agent/es/`](agent/es/README.md)。Web 阅读器右上角可切换语言。
+
 ## 阅读方式
 
 | 方式 | 入口 | 适合场景 |
 | --- | --- | --- |
-| 🌐 Web 在线版 | [books.antinomie.org/pi](https://books.antinomie.org/pi) | 沉浸式阅读，代码引文高亮 |
-| 📥 Markdown 版 | [agent/](agent/README.md) | 下载到本地，配合 AI（Claude / Cursor 等）边读边问、对照源码 |
+| 🌐 Web 在线版 | [books.antinomie.org/pi](https://books.antinomie.org/pi) | 沉浸式阅读，代码引文高亮；可切换中 / EN / ES |
+| 📥 Markdown 版 | [agent/](agent/README.md) · [en](agent/en/README.md) · [es](agent/es/README.md) | 下载到本地，配合 AI（Claude / Cursor 等）边读边问、对照源码 |
 
 ## 读者假设
 
@@ -29,7 +43,7 @@
 
 ## 工作区布局
 
-- `agent/` —— 书的原稿，**唯一的内容源头**。可见 [agent/README.md](agent/README.md)。
+- `agent/` —— 书的原稿（中文），**唯一的内容源头**。译本在 `agent/en/`、`agent/es/`。可见 [agent/README.md](agent/README.md) 与 [agent/TRANSLATION.md](agent/TRANSLATION.md)。
 - `web/` —— 阅读器（Vite + Vue）。只渲染 `agent/` 的原稿，不存放内容。
 
   ```bash
@@ -37,4 +51,4 @@
   ```
 ## 体例
 
-引文规则、三种卡片组件（插叙 / 岔路 / 为什么不去）、范围之外，都写在 [agent/README.md](agent/README.md) 的「体例」一节。
+引文规则、三种卡片组件（插叙 / 岔路 / 为什么不去），范围之外，都写在 [agent/README.md](agent/README.md) 的「体例」一节。

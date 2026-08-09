@@ -8,9 +8,14 @@
     <script>
       (() => {
         let theme;
+        let locale;
         try {
           const saved = localStorage.getItem("pi-book-theme");
           if (saved === "light" || saved === "dark") theme = saved;
+          const savedLocale = localStorage.getItem("pi-book-locale");
+          if (savedLocale === "zh" || savedLocale === "en" || savedLocale === "es") {
+            locale = savedLocale;
+          }
         } catch {
           // Storage may be unavailable in hardened browsing modes.
         }
@@ -22,6 +27,9 @@
         document
           .querySelector('meta[name="theme-color"]')
           .setAttribute("content", theme === "dark" ? "#111114" : "#fbfbf9");
+        if (locale) {
+          document.documentElement.lang = locale === "zh" ? "zh-CN" : locale;
+        }
       })();
     </script>
   </head>
