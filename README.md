@@ -47,3 +47,13 @@
 ## 体例
 
 引文规则、三种卡片组件（插叙 / 岔路 / 为什么不去），范围之外，都写在 [agent/README.md](agent/README.md) 的「体例」一节。
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=antinomie-lab%2Fpi-book&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=antinomie-lab/pi-book&type=date&theme=dark&legend=top-left&sealed_token=hp1KRJr_d31QPbl_W3j5N6tKImXlq9VsBQBRpRfZUAgTX8NHluB1grIp-A6oS9_PQlPGyIVSTVMyEoM0wVRoeEKgh88PAVXSR4LvBAroLMP867USFJkJkg" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=antinomie-lab/pi-book&type=date&legend=top-left&sealed_token=hp1KRJr_d31QPbl_W3j5N6tKImXlq9VsBQBRpRfZUAgTX8NHluB1grIp-A6oS9_PQlPGyIVSTVMyEoM0wVRoeEKgh88PAVXSR4LvBAroLMP867USFJkJkg" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=antinomie-lab/pi-book&type=date&legend=top-left&sealed_token=hp1KRJr_d31QPbl_W3j5N6tKImXlq9VsBQBRpRfZUAgTX8NHluB1grIp-A6oS9_PQlPGyIVSTVMyEoM0wVRoeEKgh88PAVXSR4LvBAroLMP867USFJkJkg" />
+ </picture>
+</a>
