@@ -142,7 +142,7 @@ const promptPromise = agent.prompt("hello");
 const idlePromise = agent.waitForIdle().then(() => {
 	idleResolved = true;
 });
-// …… after 10ms assert idleResolved is still false (the barrier in the subscriber has not released yet)
+// ... after 10ms assert idleResolved is still false (the barrier in the subscriber has not released yet)
 ```
 
 Second, non-interactive scripts by SDK users: do not await `prompt()`, drive the UI with events, and finally wait for quiet in one place (the example in `packages/coding-agent/docs/sdk.md` does exactly this). Third, abort flows in downstream wrapper layers—after Stop is pressed, you must wait until it is truly quiet before returning:
@@ -190,7 +190,7 @@ private _getIdleWaitPromise(): Promise<void> {
 
 > listeners/hooks currently receive no facade; if they close over the raw harness and call settlement APIs such as `waitForIdle()` during the active run, they can deadlock. A future facade should expose `runWhenIdle()` instead.
 >
-> —— `docs/agent-harness.md:18` (from repo root)
+> — `docs/agent-harness.md:18` (from repo root)
 
 `runWhenIdle()`'s way out is to reverse the direction; the signature itself shows the usage:
 
@@ -654,12 +654,12 @@ Does "mutate in place" mutate outside the loop? The two arrays must be separated
 It is worth pausing on the signatures of these six parameters—they are the loop's entire external interface. `prompts` and the return value are both `AgentMessage[]`; `signal` is an optional `AbortSignal`; `streamFn` is the `StreamFn` quoted in Chapter 1 (`src/types.ts:28`). The remaining three:
 
 ```typescript
-// src/agent-loop.ts:25 —— event exit; accepts sync or async
+// src/agent-loop.ts:25 — event exit; accepts sync or async
 export type AgentEventSink = (event: AgentEvent) => Promise<void> | void;
 ```
 
 ```typescript
-// src/types.ts:406 —— the "current conversation" as the loop sees it
+// src/types.ts:406 — the "current conversation" as the loop sees it
 export interface AgentContext {
 	/** System prompt included with the request. */
 	systemPrompt: string;

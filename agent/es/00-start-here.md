@@ -39,7 +39,7 @@ async function simpleLoop(messages, model, tools) {
 
 En algunos capítulos, al entrar ya te encuentran con un fragmento fijado — por ejemplo, el esqueleto de runLoop del capítulo 2. No es decoración: es la señal de ese capítulo. Las explicaciones posteriores vuelven a señalarlo una y otra vez; puedes mirar arriba en cualquier momento y contrastar, sin perderte en un capítulo largo.
 
-Si quieres ver con tus ojos el original de un párrafo, pulsa la fuente — cada afirmación del libro enlaza a la línea del repositorio donde nació. Este libro también vive en el repositorio: [`agent/00-start-here.md:42`](https://github.com/antinomie-lab/pi-book/blob/main/agent/00-start-here.md#L42); si algo está mal, ven a corregirlo.
+Si quieres ver con tus ojos el original de un párrafo, pulsa la fuente — cada afirmación del libro enlaza a la línea del repositorio donde nació. Este libro también vive en el repositorio: [`agent/es/00-start-here.md:42`](https://github.com/antinomie-lab/pi-book/blob/main/agent/es/00-start-here.md#L42); si algo está mal, ven a corregirlo.
 
 ## Un consejo
 

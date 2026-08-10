@@ -13,7 +13,8 @@
           const saved = localStorage.getItem("pi-book-theme");
           if (saved === "light" || saved === "dark") theme = saved;
           const savedLocale = localStorage.getItem("pi-book-locale");
-          if (savedLocale === "zh" || savedLocale === "en" || savedLocale === "es") {
+          // any plausible code passes; locale.js validates against the real list
+          if (/^[a-z]{2}(-[a-zA-Z]+)?$/.test(savedLocale ?? "")) {
             locale = savedLocale;
           }
         } catch {

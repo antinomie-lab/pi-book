@@ -80,7 +80,7 @@ El malentendido más fácil con este paquete es: ¿qué relación hay entre la c
 Ninguna de las dos. Mira la dirección de las dependencias:
 
 ```
-agent-loop.ts  (runAgentLoop —— bucle sin estado, 792 líneas)
+agent-loop.ts  (runAgentLoop — bucle sin estado, 792 líneas)
     ▲                    ▲
     │                    │
 agent.ts           harness/agent-harness.ts

@@ -80,7 +80,7 @@ The easiest misunderstanding about this package is: what is the relationship bet
 Neither. Look at the direction of the dependencies:
 
 ```
-agent-loop.ts  (runAgentLoop —— a stateless loop, 792 lines)
+agent-loop.ts  (runAgentLoop — a stateless loop, 792 lines)
     ▲                    ▲
     │                    │
 agent.ts           harness/agent-harness.ts

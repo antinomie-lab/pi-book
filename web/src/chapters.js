@@ -98,6 +98,3 @@ export function getChapters(locale = "zh") {
 export function getChapter(id, locale = "zh") {
   return getChapters(locale).find((c) => c.id === id);
 }
-
-/** @deprecated Prefer getChapters(locale). Kept for quick imports during migration. */
-export const chapters = getChapters("zh");
