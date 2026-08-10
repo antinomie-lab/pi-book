@@ -1,16 +1,10 @@
-# pi-explore
+<p align="center">
+  <a href="README.en.md">English</a> ·
+  <a href="README.md">简体中文</a> ·
+  <a href="README.es.md">Español</a>
+</p>
 
-Workspace for a Chinese architecture book about [pi](https://github.com/earendil-works/pi)'s `packages/agent`.
-
-> An agent loop, packaged as a library.
-
-The book starts from the code and explains how `@earendil-works/pi-agent-core` is put together: what it promises, what it refuses, and where the fulcrums are. The whole book tracks pi `main` at commit `cd20a8d2e`. Citations use `file:line` form, each with an inline quotation—so you can verify any claim without opening an editor.
-
-**Languages:** Chinese is the source of truth under [`agent/`](agent/README.md). English and Spanish translations live in [`agent/en/`](agent/en/README.md) and [`agent/es/`](agent/es/README.md). The web reader has a language switcher (中文 / English / Español).
-
-中文说明见下文。
-
----
+# Pi Agent
 
 一本中文架构书的工作区。对象是 [pi](https://github.com/earendil-works/pi) 仓库的 `packages/agent`。
 
@@ -35,7 +29,7 @@ The book starts from the code and explains how `@earendil-works/pi-agent-core` i
 
 **整体 → 局部 → 横切。**
 
-- **第一部分 · 整体**（已成稿，review 中）：建立对整个系统的正确认知，不碰实现细节。读完这部分，你应该能凭记忆把这个系统画出来。
+- **第一部分 · 整体**（已发布两章）：建立对整个系统的正确认知，不碰实现细节。读完这部分，你应该能凭记忆把这个系统画出来。
 - **第二部分 · 局部**：逐个部件展开，顺序是依赖顺序——每章只依赖它前面的章。
 - **第三部分 · 横切**：处理那些不属于任何单一部件的问题。
 
@@ -44,11 +38,12 @@ The book starts from the code and explains how `@earendil-works/pi-agent-core` i
 ## 工作区布局
 
 - `agent/` —— 书的原稿（中文），**唯一的内容源头**。译本在 `agent/en/`、`agent/es/`。可见 [agent/README.md](agent/README.md) 与 [agent/TRANSLATION.md](agent/TRANSLATION.md)。
-- `web/` —— 阅读器（Vite + Vue）。只渲染 `agent/` 的原稿，不存放内容。
+- `web/` —— 阅读器（Vite + Vue）。渲染 `agent/` 下的中文原稿与译本，不存放正文内容。
 
   ```bash
   cd web && npm install && npm run dev
   ```
+
 ## 体例
 
 引文规则、三种卡片组件（插叙 / 岔路 / 为什么不去），范围之外，都写在 [agent/README.md](agent/README.md) 的「体例」一节。
