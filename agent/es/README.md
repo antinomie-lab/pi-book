@@ -22,8 +22,9 @@ La primera parte construye una imagen correcta del sistema completo, sin entrar 
 
 ### Primera parte · El todo
 
-Tras leer estos cuatro capítulos, deberías poder dibujar el sistema de memoria.
+Tras leer esta parte, deberías poder dibujar el sistema de memoria.
 
+0. [Empieza aquí](00-start-here.md)
 1. [Qué es: un bucle de agente convertido en biblioteca](01-what-it-is.md)
 2. [El recorrido completo de un prompt: de prompt() a agent_end](02-end-to-end.md)
 
