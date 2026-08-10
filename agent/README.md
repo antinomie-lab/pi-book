@@ -2,6 +2,8 @@
 
 一个 agent 循环，被做成一个库。
 
+> 译本：[English](en/README.md) · [Español](es/README.md)。中文是唯一内容源头；翻译约定见 [TRANSLATION.md](TRANSLATION.md)。
+
 这本书从代码出发，讲清楚 `@earendil-works/pi-agent-core` 是怎么搭起来的：它承诺什么、拒绝什么、支点在哪里。
 
 > **基线：commit `cd20a8d2e`（main，v0.83.0+219）**

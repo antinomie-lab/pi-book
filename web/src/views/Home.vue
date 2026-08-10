@@ -1,7 +1,11 @@
 <script setup>
-import { chapters } from "../chapters";
+import { computed } from "vue";
+import { getChapters } from "../chapters";
+import { useLocale } from "../i18n/locale.js";
 
 const PI_DIGITS = "3.14159265358979323846264338327950288";
+const { locale, t } = useLocale();
+const chapters = computed(() => getChapters(locale.value));
 </script>
 
 <template>
@@ -12,8 +16,8 @@ const PI_DIGITS = "3.14159265358979323846264338327950288";
       class="repo-link"
       target="_blank"
       rel="noopener"
-      title="GitHub 仓库"
-      aria-label="GitHub 仓库"
+      :title="t.repoTitle"
+      :aria-label="t.repoTitle"
     >
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path
@@ -29,15 +33,15 @@ const PI_DIGITS = "3.14159265358979323846264338327950288";
     <div class="ring ring-4"></div>
 
     <section class="hero rise">
-      <p class="kicker">pi-agent-core · 源码导读</p>
+      <p class="kicker">{{ t.kicker }}</p>
       <h1 class="title">
         <span class="pi-glyph">π</span>-agent
         <em>book</em>
       </h1>
       <p class="lede">
-        它不是 LangChain。<br />
-        一个拒绝成为框架的 agent 循环。<br />
-        模块即积木，组合即架构。
+        {{ t.ledeLine1 }}<br />
+        {{ t.ledeLine2 }}<br />
+        {{ t.ledeLine3 }}
       </p>
       <p class="digits" aria-hidden="true">{{ PI_DIGITS }}</p>
     </section>
@@ -45,7 +49,7 @@ const PI_DIGITS = "3.14159265358979323846264338327950288";
     <nav class="toc">
       <RouterLink
         v-for="c in chapters"
-        :key="c.id"
+        :key="`${locale}-${c.id}`"
         :to="`/chapter/${c.id}`"
         class="toc-item"
       >
@@ -65,7 +69,7 @@ const PI_DIGITS = "3.14159265358979323846264338327950288";
     </nav>
 
     <footer class="colophon">
-      <span>预览版 · 已收录 2 章 · 持续更新中</span>
+      <span>{{ t.colophon }}</span>
     </footer>
   </main>
 </template>

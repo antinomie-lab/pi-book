@@ -35,6 +35,12 @@
   --radius: 999px;
 }
 
+:root[data-locale="en"],
+:root[data-locale="es"] {
+  --sans: "Inter", -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+
 :root[data-theme="dark"] {
   --ink: #ecece7;
   --ink-soft: #b7b7b1;
@@ -164,10 +170,8 @@ a {
 }
 
 .theme-toggle {
-  position: fixed;
-  top: 18px;
-  right: 32px;
-  z-index: 80;
+  position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
   width: 34px;
@@ -182,10 +186,6 @@ a {
   transition:
     background-color 0.3s,
     color 0.3s;
-}
-
-.theme-toggle.on-home {
-  right: 78px;
 }
 
 .theme-toggle:hover {
