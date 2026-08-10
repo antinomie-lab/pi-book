@@ -184,10 +184,6 @@ a {
     color 0.3s;
 }
 
-.theme-toggle.on-home {
-  right: 78px;
-}
-
 .theme-toggle:hover {
   background: var(--ink);
   color: var(--paper);

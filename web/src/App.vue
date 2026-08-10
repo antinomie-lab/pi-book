@@ -60,7 +60,6 @@ onUnmounted(() => {
   <button
     type="button"
     class="theme-toggle"
-    :class="{ 'on-home': isHome }"
     :aria-label="isDark ? '切换为浅色模式' : '切换为深色模式'"
     :title="isDark ? '切换为浅色模式' : '切换为深色模式'"
     :aria-pressed="isDark"
