@@ -39,7 +39,7 @@ async function simpleLoop(messages, model, tools) {
 
 Some chapters pin a block for you the moment you enter—Chapter 2's runLoop skeleton, for example. That is not decoration; it is that chapter's landmark. Later commentary points back to it again and again. Look up whenever you like, and you will not lose your way in a long chapter.
 
-If a sentence makes you want to see the original yourself, click the citation—every claim in the book links back to the line in the repository where it was born. The book itself lives in the repository too: [`agent/00-start-here.md:42`](https://github.com/antinomie-lab/pi-book/blob/main/agent/00-start-here.md#L42). If something went wrong, come point it out.
+If a sentence makes you want to see the original yourself, click the citation—every claim in the book links back to the line in the repository where it was born. The book itself lives in the repository too: [`agent/en/00-start-here.md:42`](https://github.com/antinomie-lab/pi-book/blob/main/agent/en/00-start-here.md#L42). If something went wrong, come point it out.
 
 ## One request
 

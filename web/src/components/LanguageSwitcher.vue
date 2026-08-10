@@ -24,11 +24,17 @@ function close() {
   activeIndex.value = -1;
 }
 
+function focusItem(index) {
+  activeIndex.value = index;
+  menuRef.value?.querySelectorAll('[role="menuitemradio"]')[index]?.focus();
+}
+
 function toggle() {
   open.value = !open.value;
   if (open.value) {
-    activeIndex.value = locales.findIndex((l) => l.code === locale.value);
-    nextTick(() => menuRef.value?.querySelector('[role="menuitemradio"]')?.focus());
+    // menu radio pattern: focus lands on the checked item
+    const checked = locales.findIndex((l) => l.code === locale.value);
+    nextTick(() => focusItem(checked === -1 ? 0 : checked));
   }
 }
 
@@ -62,14 +68,22 @@ function onKeydown(e) {
     return;
   }
 
+  if (e.key === "Tab") {
+    close();
+    return;
+  }
+
   if (e.key === "ArrowDown" || e.key === "ArrowUp") {
     e.preventDefault();
     const delta = e.key === "ArrowDown" ? 1 : -1;
     const next = (activeIndex.value + delta + locales.length) % locales.length;
-    activeIndex.value = next;
-    menuRef.value
-      ?.querySelectorAll('[role="menuitemradio"]')
-      [next]?.focus();
+    focusItem(next);
+    return;
+  }
+
+  if (e.key === "Home" || e.key === "End") {
+    e.preventDefault();
+    focusItem(e.key === "Home" ? 0 : locales.length - 1);
     return;
   }
 

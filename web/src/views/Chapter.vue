@@ -462,7 +462,7 @@ onMounted(() =>
   }),
 );
 onUnmounted(teardownCodeBlocks);
-watch([html, locale], async () => {
+watch(html, async () => {
   teardownCodeBlocks();
   pinned.value = [];
   pinnedEls.clear();

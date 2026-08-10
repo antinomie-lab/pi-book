@@ -7,7 +7,7 @@ El capítulo anterior explicó qué es este paquete. Este no habla de opiniones:
 La entrada es `Agent.prompt()`:
 
 ```typescript
-// src/agent.ts:344（Agent.prompt）
+// src/agent.ts:344 (Agent.prompt)
 async prompt(message: AgentMessage | AgentMessage[]): Promise<void>;
 async prompt(input: string, images?: ImageContent[]): Promise<void>;
 async prompt(input: string | AgentMessage | AgentMessage[], images?: ImageContent[]): Promise<void> {
@@ -26,7 +26,7 @@ Lo primero que hace no tiene nada que ver con la IA: comprueba `activeRun`. **Un
 `prompt()` entrega los mensajes normalizados a `runPromptMessages`, donde se ve cómo se cablean todos los preparativos posteriores:
 
 ```typescript
-// src/agent.ts:405（Agent.runPromptMessages）
+// src/agent.ts:405 (Agent.runPromptMessages)
 private async runPromptMessages(
 	messages: AgentMessage[],
 	options: { skipInitialSteeringPoll?: boolean } = {},
@@ -49,7 +49,7 @@ Observa el orden: `runWithLifecycle` envuelve por fuera, y `createContextSnapsho
 Primero, una instantánea del contexto:
 
 ```typescript
-// src/agent.ts:433（Agent.createContextSnapshot）
+// src/agent.ts:433 (Agent.createContextSnapshot)
 private createContextSnapshot(): AgentContext {
 	return {
 		systemPrompt: this._state.systemPrompt,
@@ -64,7 +64,7 @@ Fíjate en que el array de mensajes es una **copia superficial** — el bucle le
 Segundo, ensamblar la configuración del bucle (`src/agent.ts:441`) — empaquetar los callbacks de la instancia `Agent` y las funciones drain de las dos colas en un `AgentLoopConfig`:
 
 ```typescript
-// src/agent.ts:441（Agent.createLoopConfig, recortado）
+// src/agent.ts:441 (Agent.createLoopConfig, recortado)
 private createLoopConfig(options: { skipInitialSteeringPoll?: boolean } = {}): AgentLoopConfig {
 	// ...
 	return {
@@ -90,7 +90,7 @@ private createLoopConfig(options: { skipInitialSteeringPoll?: boolean } = {}): A
 Los dos argumentos ya están listos. Volvamos al exterior: `runWithLifecycle` crea un `AbortController`, registra `activeRun`, pone `isStreaming = true`, y solo entonces ejecuta el executor — es decir, en el fragmento citado arriba, evalúa los dos argumentos y llama a `runAgentLoop`:
 
 ```typescript
-// src/agent.ts:482（Agent.runWithLifecycle, recortado）
+// src/agent.ts:482 (Agent.runWithLifecycle, recortado)
 private async runWithLifecycle(executor: (signal: AbortSignal) => Promise<void>): Promise<void> {
 	if (this.activeRun) {
 		throw new Error("Agent is already processing.");
@@ -124,7 +124,7 @@ Esas tres líneas de `promise`/`resolvePromise` son una «Promise detonada a man
 **¿Quién la await?** `waitForIdle()`:
 
 ```typescript
-// src/agent.ts:328（Agent.waitForIdle）
+// src/agent.ts:328 (Agent.waitForIdle)
 waitForIdle(): Promise<void> {
 	return this.activeRun?.promise ?? Promise.resolve();
 }
@@ -137,18 +137,18 @@ Si no hay active run, devuelve una Promise que se resuelve al instante — «ya 
 **¿Dónde se llama?** En el código de producción del propio paquete no hay puntos de llamada — `waitForIdle()` es API pública pura. En el repositorio hay tres usos reales. Uno: tests, esperar a que asiente antes de asertar:
 
 ```typescript
-// test/agent.test.ts:246（recortado）
+// test/agent.test.ts:246 (recortado)
 const promptPromise = agent.prompt("hello");
 const idlePromise = agent.waitForIdle().then(() => {
 	idleResolved = true;
 });
-// ……tras 10ms asertar que idleResolved sigue en false（el barrier del suscriptor aún no ha soltado）
+// ... tras 10ms asertar que idleResolved sigue en false (el barrier del suscriptor aún no ha soltado)
 ```
 
 Dos: scripts no interactivos de usuarios del SDK: no await `prompt()`, se dispara y la UI va por eventos, y al final se espera el silencio de golpe (el ejemplo de `packages/coding-agent/docs/sdk.md` lo usa así). Tres: el flujo de abort de capas envoltorio aguas abajo — si pulsas parar, hay que esperar a que de verdad se calle antes de volver:
 
 ```typescript
-// packages/coding-agent/src/core/agent-session.ts:1541（desde la raíz del repo, AgentSession.abort）
+// packages/coding-agent/src/core/agent-session.ts:1541 (desde la raíz del repo, AgentSession.abort)
 async abort(): Promise<void> {
 	this.abortRetry();
 	this.agent.abort();
@@ -159,7 +159,7 @@ async abort(): Promise<void> {
 Fíjate en que aquí se espera `AgentSession.waitForIdle()`, no el de `Agent` — es una reimplementación propia de la capa session:
 
 ```typescript
-// packages/coding-agent/src/core/agent-session.ts:1547（desde la raíz del repo, AgentSession.waitForIdle）
+// packages/coding-agent/src/core/agent-session.ts:1547 (desde la raíz del repo, AgentSession.waitForIdle)
 async waitForIdle(): Promise<void> {
 	if (this.isIdle) {
 		return;
@@ -171,7 +171,7 @@ async waitForIdle(): Promise<void> {
 `AgentHarness` tiene también su propia versión. ¿Por qué aguas abajo no delegan directamente en `agent.waitForIdle()`? Porque cada capa define «silencio» de forma distinta: el idle de session no solo mira el agent run, también cuenta con reintentos, persistencia y demás estado propio. Así que usan **el mismo patrón** y cada una responde lo suyo — `_getIdleWaitPromise` es otra Promise detonada a mano:
 
 ```typescript
-// packages/coding-agent/src/core/agent-session.ts:568（desde la raíz del repo, AgentSession._getIdleWaitPromise, recortado）
+// packages/coding-agent/src/core/agent-session.ts:568 (desde la raíz del repo, AgentSession._getIdleWaitPromise, recortado)
 private _getIdleWaitPromise(): Promise<void> {
 	if (!this._idleWaitPromise) {
 		this._idleWaitPromise = new Promise((resolve) => {
@@ -190,12 +190,12 @@ private _getIdleWaitPromise(): Promise<void> {
 
 > listeners/hooks currently receive no facade; if they close over the raw harness and call settlement APIs such as `waitForIdle()` during the active run, they can deadlock. A future facade should expose `runWhenIdle()` instead.
 >
-> —— `docs/agent-harness.md:18`（desde la raíz del repo）
+> — `docs/agent-harness.md:18` (desde la raíz del repo)
 
 La salida de `runWhenIdle()` es cambiar de dirección; la firma ya enseña el uso:
 
 ```typescript
-// docs/harness-v2.md:730（desde la raíz del repo, documento de diseño）
+// docs/harness-v2.md:730 (desde la raíz del repo, documento de diseño)
 runWhenIdle(callback: () => void | Promise<void>): Promise<void>;   // runtime-only
 ```
 
@@ -208,7 +208,7 @@ En la firma de `runWithLifecycle` hay dos patrones que merecen desplegarse; reap
 **Patrón uno: callback executor («tú traes el trabajo, yo gestiono el antes y el después»).** `runWithLifecycle` no hace el trabajo: recibe una función `(signal) => Promise<void>` como parámetro. ¿Por qué no llama directamente a `runAgentLoop`? Porque hay dos llamadores que quieren compartir el mismo «trámite de antes y después», pero hacen trabajos distintos — `runPromptMessages` ejecuta `runAgentLoop`, `runContinuation` ejecuta `runAgentLoopContinue` (`src/agent.ts:421`):
 
 ```typescript
-// src/agent.ts:421（Agent.runContinuation）
+// src/agent.ts:421 (Agent.runContinuation)
 private async runContinuation(): Promise<void> {
 	await this.runWithLifecycle(async (signal) => {
 		await runAgentLoopContinue(
@@ -232,7 +232,7 @@ Al abstraer el «trabajo» en un parámetro, el trámite de antes y después (cr
 Así que es una difusión unidireccional de cancelación: **solo el creador puede cancelar; todo lo de aguas abajo solo puede obedecer.** Mira el viaje del signal en `runWithLifecycle`: el controller se crea aquí, el signal se entrega al executor → el executor lo pasa a `runAgentLoop` → el bucle lo pasa a `streamFn` (cancelar la petición HTTP) y al `execute()` de cada herramienta (terminar el comando en marcha). Y la mano que pulsa el botón está en otro sitio:
 
 ```typescript
-// src/agent.ts:319（Agent.abort）
+// src/agent.ts:319 (Agent.abort)
 /** Abort the current run, if one is active. */
 abort(): void {
 	this.activeRun?.abortController.abort();
@@ -244,7 +244,7 @@ Pulsa «parar» en la UI → `agent.abort()` → el controller se pulsa. Fíjate
 **Está emitiendo en streaming (el modelo aún habla).** El signal ya se entregó a `streamFn` al hacer la petición:
 
 ```typescript
-// src/agent-loop.ts:308（dentro de streamAssistantResponse）
+// src/agent-loop.ts:308 (dentro de streamAssistantResponse)
 const response = await streamFunction(config.model, llmContext, {
 	...config,
 	apiKey: resolvedApiKey,
@@ -257,7 +257,7 @@ La capa HTTP corta el flujo al instante; según el contrato de `StreamFn` (capí
 **Está ejecutando una herramienta (por ejemplo bash aún corre).** El bucle no mata la herramienta a la fuerza: el signal va en los parámetros de `execute()` (se ve en la cita de la sección «ejecutar herramientas» de este capítulo); cómo responder es cosa de la herramienta — el bash integrado mata el subproceso (capítulo 12). La promesa del lado del bucle es «no abrir trabajo nuevo»: en la fase prepare hay una comprobación; si el signal ya está pulsado, convierte las llamadas a herramientas aún no arrancadas en resultados de error:
 
 ```typescript
-// src/agent-loop.ts:644（dentro de prepareToolCall）
+// src/agent-loop.ts:644 (dentro de prepareToolCall)
 if (signal?.aborted) {
 	return {
 		kind: "immediate",
@@ -270,7 +270,7 @@ if (signal?.aborted) {
 En ejecución secuencial, tras cada herramienta también se comprueba una vez; si está pulsado, se interrumpe el resto del lote:
 
 ```typescript
-// src/agent-loop.ts:478（dentro de executeToolCallsSequential）
+// src/agent-loop.ts:478 (dentro de executeToolCallsSequential)
 if (signal?.aborted) {
 	break;
 }
@@ -287,7 +287,7 @@ Por último, fíjate en que el signal en las firmas suele ser opcional (`AbortSi
 `runAgentLoop` primero añade los mensajes del prompt al contexto, emite `agent_start`, `turn_start` y el `message_start`/`message_end` del propio prompt, y luego entrega el control al motor de verdad, `runLoop`:
 
 ```typescript
-// src/agent-loop.ts:95（recortado）
+// src/agent-loop.ts:95 (recortado)
 export async function runAgentLoop(
 	prompts: AgentMessage[],
 	context: AgentContext,
@@ -317,7 +317,7 @@ export async function runAgentLoop(
 Entonces, ¿dónde está el bucle dentro de ese «motor de verdad» `runLoop`? Primero aclara qué significa «bucle». El «bucle de agente» de cada día es el vaivén **modelo → herramienta → modelo**: el modelo produce llamadas a herramientas, los resultados se alimentan de vuelta al modelo, el modelo vuelve a producir, hasta que no hay más llamadas. Ese vaivén en el código no es recursión: es iteración — un `while` dentro de `runLoop`. Y dentro de `runLoop` hay en realidad **dos** `while`; de ahí el sentido literal de «estructura de dos capas». Pongamos el código real (solo se pliegan dos cuerpos de función ajenos a la estructura del bucle):
 
 ```typescript
-// src/agent-loop.ts:155（bloque prepareNextTurn plegado——es un desvío, no el tronco; ver la sección "Desvío" de esta parte; el resto línea a línea fiel）
+// src/agent-loop.ts:155 (bloque prepareNextTurn plegado — es un desvío, no el tronco; ver la sección "Desvío" de esta parte; el resto línea a línea fiel)
 async function runLoop(
 	initialContext: AgentContext,
 	newMessages: AgentMessage[],
@@ -371,7 +371,7 @@ async function runLoop(
 			const toolResults: ToolResultMessage[] = [];
 			hasMoreToolCalls = false;
 			if (toolCalls.length > 0) {
-				// ...（guardia de truncamiento "length"; ver la sección "ejecutar herramientas" de este capítulo）
+				// ... (guardia de truncamiento "length"; ver la sección "ejecutar herramientas" de este capítulo)
 				const executedToolBatch =
 					message.stopReason === "length"
 						? await failToolCallsFromTruncatedMessage(toolCalls, emit)
@@ -387,7 +387,7 @@ async function runLoop(
 
 			await emit({ type: "turn_end", message, toolResults });
 
-			// ...（prepareNextTurn: desvío de cambiar instantánea entre dos vueltas; plegado; ver sección más abajo）
+			// ... (prepareNextTurn: desvío de cambiar instantánea entre dos vueltas; plegado; ver sección más abajo)
 
 			if (
 				await config.shouldStopAfterTurn?.({
@@ -425,14 +425,14 @@ async function runLoop(
 Antes de analizar este esqueleto, una lección de las estructuras de datos básicas de una aplicación LLM — `message`, `toolResults` y `pendingMessages` del esqueleto son todas ella. Toda la historia del diálogo es un array de `Message`, y `Message` solo tiene tres roles:
 
 ```typescript
-// packages/ai/src/types.ts:442（desde la raíz del repo）
+// packages/ai/src/types.ts:442 (desde la raíz del repo)
 export type Message = UserMessage | AssistantMessage | ToolResultMessage;
 ```
 
 Los tres roles corresponden a las tres acciones del protocolo de diálogo: **user habla**, **assistant hace**, **toolResult alimenta el resultado de la herramienta de vuelta**. El vaivén «modelo → herramienta → modelo» del bucle, en datos, es ir añadiendo al array mensajes assistant y toolResult de forma alternada. Su aspecto (campos recortados; se deja el tronco):
 
 ```typescript
-// packages/ai/src/types.ts:402 / :408 / :424（desde la raíz del repo, recortado）
+// packages/ai/src/types.ts:402 / :408 / :424 (desde la raíz del repo, recortado)
 export interface UserMessage {
 	role: "user";
 	content: string | (TextContent | ImageContent)[];
@@ -443,7 +443,7 @@ export interface AssistantMessage {
 	role: "assistant";
 	content: (TextContent | ThinkingContent | ToolCall)[];
 	stopReason: StopReason;   // por qué paró esta ronda: terminó de hablar / quiere llamar herramientas / error / truncado…
-	// ...（metadatos: api / provider / model / usage / errorMessage, etc.）
+	// ... (metadatos: api / provider / model / usage / errorMessage, etc.)
 	timestamp: number;
 }
 
@@ -462,7 +462,7 @@ Tres roles, y punto — el system prompt no está en este array: es un campo ind
 Fíjate en el tipo de `AssistantMessage.content`: **no es una cadena, es un array de bloques de contenido**. Un mensaje assistant es una secuencia de varios bloques; cada bloque es una de tres opciones:
 
 ```typescript
-// packages/ai/src/types.ts:347 / :353 / :369（desde la raíz del repo, recortado）
+// packages/ai/src/types.ts:347 / :353 / :369 (desde la raíz del repo, recortado)
 export interface TextContent {
 	type: "text";
 	text: string;
@@ -516,7 +516,7 @@ Lee palabra a palabra la condición de la cita: en este lote, **cada** (`every`)
 1. **Ninguna herramienta izó la bandera** — `terminate` es un hint opcional en el resultado de la herramienta; la gran mayoría de herramientas nunca lo ponen; ese es el `false` más habitual. La definición de esta bandera en el tipo:
 
 ```typescript
-// src/types.ts:364（dentro de AgentToolResult）
+// src/types.ts:364 (dentro de AgentToolResult)
 /**
  * Hint that the agent should stop after the current tool batch.
  * Early termination only happens when every finalized tool result in the batch sets this to true.
@@ -528,7 +528,7 @@ terminate?: boolean;
 3. **Camino del guardia de truncamiento** — el lote que devuelve `failToolCallsFromTruncatedMessage` tiene hardcodeado continuar:
 
 ```typescript
-// src/agent-loop.ts:405（retorno de failToolCallsFromTruncatedMessage）
+// src/agent-loop.ts:405 (retorno de failToolCallsFromTruncatedMessage)
 return { messages, terminate: false };
 ```
 
@@ -539,7 +539,7 @@ Al revés, `terminate: true` solo aparece cuando **cada resultado de herramienta
 ¿Qué herramienta izaría la bandera? En el repositorio hay un ejemplo real (en el ejemplo de extensión del paquete hermano `packages/coding-agent`); el comentario de cabecera del archivo deja el motivo muy claro:
 
 ```typescript
-// packages/coding-agent/examples/extensions/structured-output.ts:1（desde la raíz del repo）
+// packages/coding-agent/examples/extensions/structured-output.ts:1 (desde la raíz del repo)
 /**
  * Structured Output Tool
  *
@@ -580,7 +580,7 @@ Herramientas como `structured_output` son **unidireccionales**: los parámetros 
 `shouldStopAfterTurn` es el canal formal del host para expresar «cierre elegante»; conviene dejar claro cómo funciona. Es un callback opcional de `AgentLoopConfig`; se llama tras cada `turn_end` y antes de hacer poll a las dos colas (justo en la posición de la cita del esqueleto), y recibe toda la información del turn que acaba de terminar:
 
 ```typescript
-// src/types.ts:121（recortado）
+// src/types.ts:121 (recortado)
 export interface ShouldStopAfterTurnContext {
 	/** The assistant message that completed the turn. */
 	message: AssistantMessage;
@@ -602,7 +602,7 @@ Así cada punto de decisión tiene código de una sola línea, y la corrección 
 ¿Y dónde está el «cuerpo de la función»? **No en este paquete.** Es la costura entre el bucle y el host: el bucle solo tiene el punto de llamada; la lógica de juicio la aporta por completo el host. La clase `Agent` la expone como una propiedad pública asignable, y al ensamblar la envuelve y la mete en el config:
 
 ```typescript
-// src/agent.ts:456（dentro de Agent.createLoopConfig）
+// src/agent.ts:456 (dentro de Agent.createLoopConfig)
 shouldStopAfterTurn: shouldStopAfterTurn
 	? async (context) => await shouldStopAfterTurn(context, this.signal)
 	: undefined,
@@ -611,7 +611,7 @@ shouldStopAfterTurn: shouldStopAfterTurn
 Esa capa de envoltorio solo hace una cosa: alimentar a tu callback con un signal de más; si no lo configuraste, se pasa `undefined`, y el `?.` del lado del bucle hace corto circuito a «no parar». Así que cómo es de verdad el cuerpo de la función es cosa de la aplicación — por ejemplo «estimar el número de tokens del contexto actual; si supera el umbral, devolver `true`», una implementación típica del escenario de gestión de contexto:
 
 ```typescript
-// ilustración: si el contexto supera el umbral, pedir cierre elegante（código del lado de la app, no está en el repo pi）
+// ilustración: si el contexto supera el umbral, pedir cierre elegante (código del lado de la app, no está en el repo pi)
 function roughTokens(messages: AgentMessage[]): number {
 	let chars = 0;
 	for (const m of messages) {
@@ -654,12 +654,12 @@ Otra cosa: cómo se pasa el estado entre iteraciones. `currentContext`, `newMess
 Merece pararse un momento en la firma de estos seis parámetros — son toda la interfaz del bucle hacia fuera. `prompts` y el valor de retorno son `AgentMessage[]`; `signal` es un `AbortSignal` opcional; `streamFn` es el `StreamFn` citado en el capítulo 1 (`src/types.ts:28`). Quedan tres:
 
 ```typescript
-// src/agent-loop.ts:25 —— salida de eventos; acepta sync y async
+// src/agent-loop.ts:25 — salida de eventos; acepta sync y async
 export type AgentEventSink = (event: AgentEvent) => Promise<void> | void;
 ```
 
 ```typescript
-// src/types.ts:406 —— el "diálogo actual" a ojos del bucle
+// src/types.ts:406 — el "diálogo actual" a ojos del bucle
 export interface AgentContext {
 	/** System prompt included with the request. */
 	systemPrompt: string;
@@ -725,7 +725,7 @@ La capa Agent del mapa. El nombre `prepareNextTurn` aparece en esta capa en tres
 La entrada es el paquete de parámetros del constructor: el constructor de `Agent` solo recibe un argumento, de tipo `AgentOptions`, y esas dos claves homónimas viven en ese tipo:
 
 ```typescript
-// src/agent.ts:216（inicio del constructor de Agent）
+// src/agent.ts:216 (inicio del constructor de Agent)
 constructor(options: AgentOptions) {
 	// Older compiled consumers may omit options or streamFn even though the current API requires them.
 	const runtimeOptions: Partial<AgentOptions> = options ?? {};
@@ -734,7 +734,7 @@ constructor(options: AgentOptions) {
 De la entrada a la ranura es la copia rutinaria del constructor, el mismo trato que cualquier callback:
 
 ```typescript
-// src/agent.ts:229（dentro del constructor de Agent）
+// src/agent.ts:229 (dentro del constructor de Agent)
 this.prepareNextTurn = runtimeOptions.prepareNextTurn;
 this.prepareNextTurnWithContext = runtimeOptions.prepareNextTurnWithContext;
 ```
@@ -757,9 +757,9 @@ public prepareNextTurnWithContext?: (
 La diferencia entre las dos ranuras está solo en el primer parámetro: la versión antigua solo da signal; la nueva da además la información del turn que acaba de terminar; el valor de retorno es idéntico—esa instantánea de tres campos que al inicio del Desvío se fusiona campo a campo con `??`. Al ensamblar, `Agent` lee esas dos ranuras y las normaliza al nombre único de la salida:
 
 ```typescript
-// src/agent.ts:459（dentro de Agent.createLoopConfig, el literal del objeto que se hace return——es decir AgentLoopConfig; el resto de claves plegado, las de la cita de ensamblaje al inicio del capítulo）
+// src/agent.ts:459 (dentro de Agent.createLoopConfig, el literal del objeto que se hace return — es decir AgentLoopConfig; el resto de claves plegado, las de la cita de ensamblaje al inicio del capítulo)
 return {
-	// ...（model、convertToLlm、sondeo de cola y demás claves）
+	// ... (model, convertToLlm, sondeo de cola y demás claves)
 	prepareNextTurn:
 		this.prepareNextTurnWithContext || this.prepareNextTurn
 			? async (context) => {
@@ -781,7 +781,7 @@ Al leer esta cita, vuelvan a mirar esos tres sitios: la línea divisoria ya se v
 Más abajo, a la capa host. En este repositorio el gancho tiene dos implementaciones reales, y el camino es justo el opuesto: coding-agent apila una capa y cada vuelta relee systemPrompt, lista de herramientas, modelo e intensidad de pensamiento—
 
 ```typescript
-// packages/coding-agent/src/core/agent-session.ts:526（desde la raíz del repo, AgentSession._installAgentNextTurnRefresh）
+// packages/coding-agent/src/core/agent-session.ts:526 (desde la raíz del repo, AgentSession._installAgentNextTurnRefresh)
 private _installAgentNextTurnRefresh(): void {
 	const previousPrepareNextTurnWithContext =
 		this.agent.prepareNextTurnWithContext ??
@@ -812,7 +812,7 @@ La asignación reemplaza por completo la función que ya hubiera en la ranura, a
 La implementación de harness es otro estilo: cada vuelta primero vuelca a disco las escrituras diferidas acumuladas durante el run, y luego reconstruye la instantánea entera desde la session:
 
 ```typescript
-// src/harness/agent-harness.ts:527（dentro de AgentHarness.createLoopConfig, recortado）
+// src/harness/agent-harness.ts:527 (dentro de AgentHarness.createLoopConfig, recortado)
 prepareNextTurn: async () => {
 	await this.flushPendingSessionWrites();
 	const nextTurnState = await this.createTurnState();
@@ -830,7 +830,7 @@ prepareNextTurn: async () => {
 ¿Y la compresión? Como host, la elección de coding-agent es **hacerla entre runs**—el camino de shouldStopAfterTurn en «Cuándo se para el bucle de agente»: parar en esta vuelta, el host comprime, abrir un run nuevo (el capítulo 11 lo detalla). Pero «no interrumpir el run y cambiar el contexto dentro de la vuelta» es precisamente la capacidad exclusiva de este gancho—la biblioteca deja ese camino a los hosts que lo necesiten, así:
 
 ```typescript
-// Esquema: compresión dentro del run（código del lado de la aplicación, no está en el repo de pi——coding-agent pone la compresión entre runs, véase arriba）
+// Esquema: compresión dentro del run (código del lado de la aplicación, no está en el repo de pi — coding-agent pone la compresión entre runs, véase arriba)
 agent.prepareNextTurnWithContext = async ({ context }) => {
 	if (roughTokens(context.messages) <= 150_000) {
 		return undefined;   // aún no hace falta cambiar: devolver undefined y el bucle sigue con el contexto actual
@@ -909,7 +909,7 @@ for await (const event of agentLoop(prompts, context, config, signal, streamFn))
 **Modo empujar: espera.** Registras el listener en `Agent`. Aquí no hay cola — cada vez que el bucle produce un evento, la cadena de llamadas llega hasta ti: `emit()` → `processEvents()` → tu listener, y cada eslabón es `await`:
 
 ```typescript
-// src/agent.ts:250（Agent.subscribe）—— solo mete el listener en un Set; lo que devuelve es la función de baja
+// src/agent.ts:250 (Agent.subscribe) — solo mete el listener en un Set; lo que devuelve es la función de baja
 subscribe(listener: (event: AgentEvent, signal: AbortSignal) => Promise<void> | void): () => void {
 	this.listeners.add(listener);
 	return () => this.listeners.delete(listener);
@@ -920,7 +920,7 @@ agent.subscribe(async (event) => {
 	await render(event);
 });
 
-// src/agent.ts:584（dentro de Agent.processEvents, recortado; cita completa en la sección "Cierre" de este capítulo）—— el lado del bucle:
+// src/agent.ts:584 (dentro de Agent.processEvents, recortado; cita completa en la sección "Cierre" de este capítulo) — el lado del bucle:
 for (const listener of this.listeners) {
 	await listener(event, signal);   // Mientras no hagas return, el bucle no emite el siguiente evento
 }
@@ -946,7 +946,7 @@ agent.subscribe((event) => {
 **`state` y los eventos siempre coinciden.** Primero una relación de nombres: el `agent.state` que lees en el listener y el `this._state` de las citas anteriores son **el mismo objeto** — el accessor público devuelve el campo interno tal cual:
 
 ```typescript
-// src/agent.ts:260（accessor state de Agent）
+// src/agent.ts:260 (accessor state de Agent)
 get state(): AgentState {
 	return this._state;
 }
@@ -1035,7 +1035,7 @@ Estas dos compuertas son uno de los diseños más importantes del libro; el cap�
 Pasadas las compuertas, se llama a `streamFn` y empiezan a volver eventos. El bucle mantiene con esos eventos de flujo un "mensaje en formación" (`partialMessage`), lo actualiza in situ y a la vez reenvía a los suscriptores:
 
 ```typescript
-// src/agent-loop.ts:314（dentro de streamAssistantResponse）
+// src/agent-loop.ts:314 (dentro de streamAssistantResponse)
 let partialMessage: AssistantMessage | null = null;
 let addedPartial = false;
 
@@ -1091,7 +1091,7 @@ Aquí hay **dos grupos de eventos**; hay que distinguirlos. Las etiquetas `case`
 Que nueve tipos puedan compartir un mismo cuerpo de función se explica en la definición de `AssistantMessageEvent`: cada uno de los nueve miembros de incremento lleva un snapshot `partial` **completo** — no un delta, sino "el mensaje entero hasta ahora" (los terminales `done`/`error` llevan directamente el mensaje final):
 
 ```typescript
-// packages/ai/src/types.ts:510（desde la raíz del repositorio）
+// packages/ai/src/types.ts:510 (desde la raíz del repositorio)
 export type AssistantMessageEvent =
 	| { type: "start"; partial: AssistantMessage }
 	| { type: "text_start"; contentIndex: number; partial: AssistantMessage }
@@ -1110,7 +1110,7 @@ export type AssistantMessageEvent =
 Así el bucle no necesita distinguir de qué grupo viene: `partialMessage = event.partial` sustituye el conjunto y actualiza in situ — la última celda que se sobrescribe es justo la que `start` hizo `push` como placeholder. El guard `if (partialMessage)` protege frente a flujos que no cumplen: el comentario de tipos dice "Streams should emit `start` before partial updates"; en una implementación correcta `start` llega primero; si un incremento se adelanta, no hay dónde ponerlo y se salta. ¿Dónde quedó la diferencia entre los tres grupos? En el campo `assistantMessageEvent` del evento de salida — que el nombre del campo coincida con el tipo de entrada no es casualidad; su tipo es precisamente el de arriba:
 
 ```typescript
-// src/types.ts:432（un miembro de la unión AgentEvent; la barra vertical es "o"）
+// src/types.ts:432 (un miembro de la unión AgentEvent; la barra vertical es "o")
 | { type: "message_update"; message: AgentMessage; assistantMessageEvent: AssistantMessageEvent }
 ```
 
@@ -1136,7 +1136,7 @@ const executedToolBatch =
 Cuando la salida se corta por el límite de tokens, los argumentos de cada tool call pueden ser JSON incompleto. **Se marcan todos como error; no se ejecuta ninguno**, y se deja que el modelo los reenvíe. El texto del error le dice la causa directamente al modelo:
 
 ```typescript
-// src/agent-loop.ts:395（dentro de failToolCallsFromTruncatedMessage）
+// src/agent-loop.ts:395 (dentro de failToolCallsFromTruncatedMessage)
 result: createErrorToolResult(
 	`Tool call "${toolCall.name}" was not executed: the response hit the output token limit, so its arguments may be truncated. Re-issue the tool call with complete arguments.`,
 ),
@@ -1147,7 +1147,7 @@ En el caso normal se entra en `executeToolCalls` (`src/agent-loop.ts:411`); cada
 **Primer tramo, prepare**: encontrar la herramienta, pasar la capa de compatibilidad `prepareArguments`, validar argumentos contra el schema, preguntar a `beforeToolCall` si deja pasar. Si no se encuentra la herramienta, se convierte de inmediato en un resultado de error "ya terminado":
 
 ```typescript
-// src/agent-loop.ts:607（dentro de prepareToolCall）
+// src/agent-loop.ts:607 (dentro de prepareToolCall)
 const tool = currentContext.tools?.find((t) => t.name === toolCall.name);
 if (!tool) {
 	return {
@@ -1171,7 +1171,7 @@ export interface BeforeToolCallResult {
 El lugar de la llamada (la comprobación intermedia de `signal?.aborted` es el puesto de guardia habitual de la sección «abort: salida incondicional»):
 
 ```typescript
-// src/agent-loop.ts:619（dentro de prepareToolCall）
+// src/agent-loop.ts:619 (dentro de prepareToolCall)
 if (config.beforeToolCall) {
 	const beforeResult = await config.beforeToolCall(
 		{
@@ -1202,7 +1202,7 @@ if (config.beforeToolCall) {
 **Segundo tramo, execute**: llamar a `execute()` de la herramienta. Si la herramienta lanza, no importa — se captura y se envuelve como resultado con `isError: true`:
 
 ```typescript
-// src/agent-loop.ts:675（dentro de executePreparedToolCall, recortado）
+// src/agent-loop.ts:675 (dentro de executePreparedToolCall, recortado)
 try {
 	const result = await prepared.tool.execute(
 		prepared.toolCall.id,
@@ -1224,7 +1224,7 @@ try {
 **Tercer tramo, finalize**: preguntar a `afterToolCall` si quiere reescribir el resultado — le entrega el resultado actual y la bandera de error, recibe un parche, y sobrescribe campo a campo; los campos no aportados conservan el valor original. Si el hook lanza, también hay red de seguridad, el mismo trato que en el tramo execute: se envuelve como `isError: true`:
 
 ```typescript
-// src/agent-loop.ts:717（dentro de finalizeExecutedToolCall）
+// src/agent-loop.ts:717 (dentro de finalizeExecutedToolCall)
 let result = executed.result;
 let isError = executed.isError;
 
@@ -1274,7 +1274,7 @@ return executeToolCallsParallel(/* ... */);
 Por defecto parallel — todas las herramientas se preparan una a una primero (`beforeToolCall` se invoca en orden de declaración), luego las que pasan se ejecutan concurrentemente; `tool_execution_end` se emite en **orden de finalización**; pero los mensajes toolResult que caen en el flujo de mensajes siguen el **orden de declaración** del mensaje assistant:
 
 ```typescript
-// src/agent-loop.ts:540（dentro de executeToolCallsParallel）
+// src/agent-loop.ts:540 (dentro de executeToolCallsParallel)
 const orderedFinalizedCalls = await Promise.all(
 	finalizedCalls.map((entry) => (typeof entry === "function" ? entry() : Promise.resolve(entry))),
 );
@@ -1293,16 +1293,16 @@ Basta con que una herramienta del lote declare `executionMode: "sequential"` par
 Los eventos de `AgentEvent` pertenecen a cuatro niveles; cada nivel tiene su origen:
 
 ```
-run      agent_start · agent_end  ← esqueleto（「Las dos capas del bucle de agente」）
+run      agent_start · agent_end  ← esqueleto («Las dos capas del bucle de agente»)
 turn     turn_start · turn_end  ← esqueleto, cada vuelta del bucle interior
-message  message_start · message_update · message_end  ← reflujo（assistant）· inyección（prompt, intercalado, follow-up）
-tool     tool_execution_start · _update · _end  ← tubería de herramientas（「Ejecutar herramientas」）
+message  message_start · message_update · message_end  ← reflujo (assistant)· inyección (prompt, intercalado, follow-up)
+tool     tool_execution_start · _update · _end  ← tubería de herramientas («Ejecutar herramientas»)
 ```
 
 Los eventos de los cuatro niveles pasan todos por `Agent.processEvents`. Hace dos cosas: primero **reduce** el evento en el estado (`message_end` mete el mensaje en `state.messages`, `tool_execution_start` añade el id a `pendingToolCalls`), y luego **hace await de cada suscriptor uno a uno**:
 
 ```typescript
-// src/agent.ts:540（dentro de Agent.processEvents, recortado）
+// src/agent.ts:540 (dentro de Agent.processEvents, recortado)
 private async processEvents(event: AgentEvent): Promise<void> {
 	switch (event.type) {
 		case "message_end":
@@ -1326,7 +1326,7 @@ private async processEvents(event: AgentEvent): Promise<void> {
 En «emit al otro lado» dijimos que el "await uno a uno" es la diferencia más sustancial entre `Agent` y el bucle desnudo — el procesamiento asíncrono del suscriptor forma parte de la liquidación del run. Aquí se ve su forma de cierre: emitir `agent_end` ≠ fin del run; cuando todos los listeners de `agent_end` han terminado, `finishRun()` limpia el estado de runtime y entonces `waitForIdle()` resuelve:
 
 ```typescript
-// src/agent.ts:525（dentro de Agent.finishRun）
+// src/agent.ts:525 (dentro de Agent.finishRun)
 private finishRun(): void {
 	this._state.isStreaming = false;
 	this._state.streamingMessage = undefined;
@@ -1344,8 +1344,8 @@ El recorrido completo de un `prompt()`:
 
 ```
 prompt() → runPromptMessages → runWithLifecycle → runAgentLoop(snapshot, ensamblaje) → runLoop
-  ├─ transformContext → convertToLlm → streamFn（streaming）
-  ├─ prepare → execute → finalize（tubería de herramientas en tres tramos）
+  ├─ transformContext → convertToLlm → streamFn (streaming)
+  ├─ prepare → execute → finalize (tubería de herramientas en tres tramos)
   ├─ turn_end → prepareNextTurn? → shouldStopAfterTurn? → steering?
   └─ follow-up? → el bucle exterior da otra vuelta
 → agent_end → await de todos los listeners → finishRun
@@ -1367,7 +1367,7 @@ El siguiente capítulo pone en un mapa todos los módulos por los que pasó este
 > **¿Por qué un `prompt()` concurrente lanza error en lugar de encolar automáticamente hasta que termine la ronda anterior?** Porque el encolado automático ocultaría la decisión entre "quiero intercalarme" y "quiero esperar al final" — y esa es precisamente la frontera semántica entre steer y followUp (véase la siguiente tarjeta). La elección de la biblioteca es hacer la decisión explícita: si vuelves a llamar a `prompt()` mientras hay streaming, se hace throw, y el mensaje de error te da directamente las tres salidas (CHANGELOG 0.32.0: "preventing race conditions and corrupted state"):
 >
 > ```typescript
-> // src/agent.ts:347（dentro de Agent.prompt）
+> // src/agent.ts:347 (dentro de Agent.prompt)
 > if (this.activeRun) {
 > 	throw new Error(
 > 		"Agent is already processing a prompt. Use steer() or followUp() to queue messages, or wait for completion.",
@@ -1380,7 +1380,7 @@ El siguiente capítulo pone en un mapa todos los módulos por los que pasó este
 > **¿Por qué `shouldStopAfterTurn` no es un abort reforzado?** abort corta de inmediato el flujo del provider y `stopReason` pasa a `aborted`; este callback espera a que el turn actual termine por completo, tras emitir `turn_end`, y sale antes de sondear las colas y de la siguiente llamada al LLM — no toca el flujo, no cancela herramientas en curso, no cambia `stopReason`. El motivo está en el JSDoc: cerrar con elegancia cuando el context está casi lleno (otro escenario real es el traspaso al apagar un servicio, issue #4118):
 >
 > ```typescript
-> // src/types.ts:208（JSDoc de AgentLoopConfig.shouldStopAfterTurn, recortado: detalle de comportamiento y dos frases del contrato）
+> // src/types.ts:208 (JSDoc de AgentLoopConfig.shouldStopAfterTurn, recortado: detalle de comportamiento y dos frases del contrato)
 >  * Called after each turn fully completes and `turn_end` has been emitted.
 >  * If it returns true, the loop emits `agent_end` and exits before polling steering or follow-up queues,
 >  * without starting another LLM call.
@@ -1390,7 +1390,7 @@ El siguiente capítulo pone en un mapa todos los módulos por los que pasó este
 > **¿Por qué emit hace await de los suscriptores uno a uno en lugar de fire-and-forget?** Porque el trabajo típico del listener es persistir, flush — si empujas y no esperas, al devolver el run la escritura puede no haber terminado. Por eso el procesamiento asíncrono del suscriptor cuenta en la liquidación del run: `agent_end` solo significa "el bucle ya no emite eventos"; idle espera a que todos sus listeners hayan hecho settle. Esa semántica la corrigió el commit `9022a5b5e` — antes nadie esperaba la Promise del listener:
 >
 > ```typescript
-> // src/agent.ts:241（JSDoc de Agent.subscribe, recortado: la frase inicial y la del abort signal）
+> // src/agent.ts:241 (JSDoc de Agent.subscribe, recortado: la frase inicial y la del abort signal)
 >  * Listener promises are awaited in subscription order and are included in
 >  * the current run's settlement.
 >  *
@@ -1412,7 +1412,7 @@ El siguiente capítulo pone en un mapa todos los módulos por los que pasó este
 > **¿Por qué no ejecutar los tool calls truncados "rescatados"?** Cuando la salida se corta por el límite de tokens, un parser JSON de "rescate best-effort" completa los argumentos a medias acumulados en streaming — tras completar pueden parsear y pasar la validación del schema, pero pueden quedar **silenciosamente incompletos**: qué campo falta, no hay forma de saberlo. Por eso no se ejecuta ninguno del lote y se deja que el modelo reenvíe (PR #6285; en revisión también se descartó un esquema más fino — añadir a `ToolCall` un campo `malformedArguments` y empujar el juicio al llamador):
 >
 > ```typescript
-> // src/agent-loop.ts:374（comentario de failToolCallsFromTruncatedMessage）
+> // src/agent-loop.ts:374 (comentario de failToolCallsFromTruncatedMessage)
 > /**
 >  * Fail all tool calls from an assistant message that was truncated by the
 >  * output token limit. Streamed tool-call arguments are finalized with a
