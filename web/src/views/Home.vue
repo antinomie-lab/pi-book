@@ -86,7 +86,7 @@ const PI_DIGITS = "3.14159265358979323846264338327950288";
 .repo-link {
   position: absolute;
   top: 18px;
-  right: 32px;
+  right: 78px;
   z-index: 10;
   display: grid;
   place-items: center;
