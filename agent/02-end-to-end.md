@@ -203,7 +203,7 @@ runWhenIdle(callback: () => void | Promise<void>): Promise<void>;   // runtime-o
 
 ### 插叙：executor 与 signal 两个模式
 
-`runWithLifecycle` 的签名里有两个值得展开的模式，它们在后文（尤其第 14 章）会反复出现。
+`runWithLifecycle` 的签名里有两个值得展开的模式，它们在后文（尤其第 13 章）会反复出现。
 
 **模式一：executor 回调（"你带活儿来，我管前后"）。** `runWithLifecycle` 自己不干活，它收一个函数 `(signal) => Promise<void>` 当参数。为什么不让它直接调用 `runAgentLoop`？因为有两个调用方想共用同一套"前后手续"，但干的活不一样——`runPromptMessages` 跑 `runAgentLoop`，`runContinuation` 跑 `runAgentLoopContinue`（`src/agent.ts:421`）：
 
@@ -252,9 +252,9 @@ const response = await streamFunction(config.model, llmContext, {
 });
 ```
 
-HTTP 层立刻断流，按 `StreamFn` 契约（第 4 章），这次请求以一条 `stopReason: "aborted"` 的 assistant 消息收尾。循环随即走骨架里那个 `error || aborted` 分支：发 `turn_end`、发 `agent_end`、整个 run 返回——**不等这个 turn 走完**。
+HTTP 层立刻断流，按 `StreamFn` 契约（第 3 章），这次请求以一条 `stopReason: "aborted"` 的 assistant 消息收尾。循环随即走骨架里那个 `error || aborted` 分支：发 `turn_end`、发 `agent_end`、整个 run 返回——**不等这个 turn 走完**。
 
-**正在执行工具（比如 bash 还在跑）。** 循环不硬杀工具：signal 在 `execute()` 的参数里（本章"执行工具"一节的引文可见），怎么响应是工具自己的事——内置 bash 会杀掉子进程（第 12 章）。循环这一侧的承诺是"不再开新工作"：prepare 阶段有检查，已按下的 signal 直接把还没开工的工具调用变成错误结果：
+**正在执行工具（比如 bash 还在跑）。** 循环不硬杀工具：signal 在 `execute()` 的参数里（本章"执行工具"一节的引文可见），怎么响应是工具自己的事——内置 bash 会杀掉子进程（第 11 章）。循环这一侧的承诺是"不再开新工作"：prepare 阶段有检查，已按下的 signal 直接把还没开工的工具调用变成错误结果：
 
 ```typescript
 // src/agent-loop.ts:644（prepareToolCall 内）
@@ -457,7 +457,7 @@ export interface ToolResultMessage {
 }
 ```
 
-三种角色，到顶了——system prompt 不在这个数组里，它是 `Context` 的独立字段，每次请求单独随附。至于应用想要第四种角色（通知、摘要标记）怎么办，那是第 4 章的支点问题，这里先记住"LLM 只认这三种角色"。
+三种角色，到顶了——system prompt 不在这个数组里，它是 `Context` 的独立字段，每次请求单独随附。至于应用想要第四种角色（通知、摘要标记）怎么办，那是第 3 章的支点问题，这里先记住"LLM 只认这三种角色"。
 
 注意 `AssistantMessage.content` 的类型：**不是字符串，是内容块数组**。一条 assistant 消息是若干块的序列，每块三选一：
 
@@ -569,7 +569,7 @@ async execute(_toolCallId, params) {
 
 举旗还有第二个入口：工具自己不举，`afterToolCall` 钩子在 finalize 阶段替它举——`finalizeExecutedToolCall` 的逐字段合并里有 `terminate: afterResult.terminate ?? result.terminate`（本章"执行工具"一节的引文里可见）。这让"是否提前结束"变成宿主可以拦截的决策，不只是工具作者的硬编码。
 
-反过来问一句能把这件事彻底想透：**什么工具结果不是最终答案？** 答案是这个循环里的几乎全部工具。看内置的四个（第 12 章细讲）：`read` 的结果是一段文件内容——它不是答案，是**材料**，模型要读完才能回答"这个函数是干什么的"；`bash` 跑测试的结果是一堆输出——模型要看了才知道该修哪行；`edit` 的结果是 diff——模型要确认改对了才决定下一步。这些工具的信息流向是**双向**的：参数是模型下达的指令，结果是回喂给模型的观察，循环的价值就在"观察 → 决策 → 再行动"的往复里。
+反过来问一句能把这件事彻底想透：**什么工具结果不是最终答案？** 答案是这个循环里的几乎全部工具。看内置的四个（第 11 章细讲）：`read` 的结果是一段文件内容——它不是答案，是**材料**，模型要读完才能回答"这个函数是干什么的"；`bash` 跑测试的结果是一堆输出——模型要看了才知道该修哪行；`edit` 的结果是 diff——模型要确认改对了才决定下一步。这些工具的信息流向是**双向**的：参数是模型下达的指令，结果是回喂给模型的观察，循环的价值就在"观察 → 决策 → 再行动"的往复里。
 
 而 `structured_output` 这类工具是**单向**的：参数本身就是成品（模型在发起调用时已经想完了），工具结果只是一张"已存好"的回执——回执再喂给模型，模型无话可说。所以判断一个工具该不该举旗，一句话就够：**这条 toolResult 回到模型手里之后，模型还有没有有意义的事可做？** 有，就是普通工具；没有，就是终点工具。
 
@@ -630,10 +630,10 @@ agent.shouldStopAfterTurn = ({ context }) => {
 这个例子还有三个细节值得说清。
 
 - **阈值**：150k 是示例值，实际按模型的 context window 定——比如 200k 窗口的模型，要预留输出和系统提示的空间，在 150k 左右踩刹车。
-- **估算**：`roughTokens` 是字符数粗估，真实实现会用对应模型的 tokenizer（harness 的 compaction 有正式的 token 统计，第 11 章）。
+- **估算**：`roughTokens` 是字符数粗估，真实实现会用对应模型的 tokenizer（harness 的 compaction 有正式的 token 统计，第 10 章）。
 - **粒度**：它只在 turn 边界生效——这正是"优雅"的含义，不会半途掐断一个 turn，而是等这一圈完整落袋后才停。如果想不停下来、直接在 run 内换掉上下文继续跑，那是 `prepareNextTurn` 那条岔路（本章"岔路"一节）。
 
-它和 abort 的差别在**谁来喊、什么时候喊**：abort 是外部随时强按，立刻生效；`shouldStopAfterTurn` 是循环在 turn 边界上主动来问，问的是"要不要体面地停在这"——典型场景是上下文快满了，宿主让它停在这一圈，好接手做压缩或总结。和本章后面"岔路"一节的 `prepareNextTurn` 放在一起看，它们是一对旋钮：一个问"要不要停"，一个问"下一圈换不换装备"。契约照旧是"失败变成值"：不许抛异常，否则事件序列就断了（第 4 章）。
+它和 abort 的差别在**谁来喊、什么时候喊**：abort 是外部随时强按，立刻生效；`shouldStopAfterTurn` 是循环在 turn 边界上主动来问，问的是"要不要体面地停在这"——典型场景是上下文快满了，宿主让它停在这一圈，好接手做压缩或总结。和本章后面"岔路"一节的 `prepareNextTurn` 放在一起看，它们是一对旋钮：一个问"要不要停"，一个问"下一圈换不换装备"。契约照旧是"失败变成值"：不许抛异常，否则事件序列就断了（第 3 章）。
 
 #### abort：无条件出口
 
@@ -643,7 +643,7 @@ agent.shouldStopAfterTurn = ({ context }) => {
 
 **外层 `while (true)` 转一圈 = 一批 follow-up。** 内层耗尽后，循环本来该结束了，但先问一句 follow-up 队列：有人排队"顺便再做一件事"，就把它们塞进 `pendingMessages`，`continue` 回去让内层再转；没有，`break`。外层存在的全部理由就是这一问。
 
-`pendingMessages` 的消费方式也值得细看，因为它是两条队列汇流的地方。注入块做三件事：逐条发 `message_start`/`message_end`（对订阅者来说，插队消息和普通消息的事件序列完全一样）、推进 `currentContext` 和 `newMessages`（下一个模型请求能看到它）、然后清空数组（每圈最多注入一批，一批几条由队列的 mode 决定，`one-at-a-time` 还是 `all`，第 6 章讲）。注意注入点在**调模型之前**——插队消息永远赶在模型的下一次回应前进入上下文。而外层续命时把 `followUpMessages` 赋给 `pendingMessages`，走的正是这同一条注入管线：**steering 和 follow-up 共用一套机制，区别只在 poll 的时机**——一个在每个 turn 后问，一个在真要停的时候才问。
+`pendingMessages` 的消费方式也值得细看，因为它是两条队列汇流的地方。注入块做三件事：逐条发 `message_start`/`message_end`（对订阅者来说，插队消息和普通消息的事件序列完全一样）、推进 `currentContext` 和 `newMessages`（下一个模型请求能看到它）、然后清空数组（每圈最多注入一批，一批几条由队列的 mode 决定，`one-at-a-time` 还是 `all`，第 5 章讲）。注意注入点在**调模型之前**——插队消息永远赶在模型的下一次回应前进入上下文。而外层续命时把 `followUpMessages` 赋给 `pendingMessages`，走的正是这同一条注入管线：**steering 和 follow-up 共用一套机制，区别只在 poll 的时机**——一个在每个 turn 后问，一个在真要停的时候才问。
 
 为什么需要两层，而不是一个大 while？因为两种队列的**检查时机**不同：steering 在每个 turn 之后都要看（用户在 agent 工作时随时插话），follow-up 只能在"agent 真的要停了"的点才看。合并成一个循环，就得在同一个条件里表达两种时机，代码会长出奇怪的旗标；两层 while 各管一种时机，条件读起来就是业务语义本身。
 
@@ -670,7 +670,7 @@ export interface AgentContext {
 }
 ```
 
-`config: AgentLoopConfig`（`src/types.ts:144`）是最大的一块——模型、闸门、hook、队列轮询全在里面，第 6 章会逐个字段拆开。这里先记住分工：`context` 是**数据**（说什么），`config` 是**行为**（怎么说、说完做什么），`emit` 是**出口**（说给谁听）。
+`config: AgentLoopConfig`（`src/types.ts:144`）是最大的一块——模型、闸门、hook、队列轮询全在里面，第 5 章会逐个字段拆开。这里先记住分工：`context` 是**数据**（说什么），`config` 是**行为**（怎么说、说完做什么），`emit` 是**出口**（说给谁听）。
 
 ### 岔路：两圈之间换快照（prepareNextTurn）
 
@@ -827,7 +827,7 @@ prepareNextTurn: async () => {
 
 #### 还能这么用：run 内压缩
 
-那压缩呢？作为宿主，coding-agent 的选择是**在 run 间做**——就是前面「agent 循环什么时候停」里 shouldStopAfterTurn 那条路：停在这一圈，宿主压缩，开新 run（第 11 章细讲）。但"不中断 run、在圈内把上下文换掉"正是这个钩子独占的能力——库把这条路留给了需要它的宿主，长这样：
+那压缩呢？作为宿主，coding-agent 的选择是**在 run 间做**——就是前面「agent 循环什么时候停」里 shouldStopAfterTurn 那条路：停在这一圈，宿主压缩，开新 run（第 10 章细讲）。但"不中断 run、在圈内把上下文换掉"正是这个钩子独占的能力——库把这条路留给了需要它的宿主，长这样：
 
 ```typescript
 // 示意：run 内压缩（应用侧代码，不在 pi 仓库里——coding-agent 把压缩放在 run 间做，见上）
@@ -1020,7 +1020,7 @@ const llmMessages = await config.convertToLlm(messages);
 - `transformContext`（可选）：直接操作 agent 侧的消息数组——剪掉老消息、注入外部上下文。输入输出都是 `AgentMessage[]`。
 - `convertToLlm`（必需）：把 `AgentMessage` 翻译成 LLM 侧的 `Message`。LLM 只认识 `user`/`assistant`/`toolResult` 三种角色，你的自定义消息类型（比如"通知""压缩摘要"）要么被转换，要么被过滤掉。
 
-这两道闸门是全书最重要的设计之一，第 4 章会展开。这里只需要记住：**循环本体从头到尾只说 `AgentMessage`，翻译只发生在 LLM 调用边界上**——这句话就写在文件头注释里：
+这两道闸门是全书最重要的设计之一，第 3 章会展开。这里只需要记住：**循环本体从头到尾只说 `AgentMessage`，翻译只发生在 LLM 调用边界上**——这句话就写在文件头注释里：
 
 ```typescript
 // src/agent-loop.ts:1
@@ -1142,7 +1142,7 @@ result: createErrorToolResult(
 ),
 ```
 
-正常情况下，进入 `executeToolCalls`（`src/agent-loop.ts:411`），每个工具调用走三段管线。这里跟一遍主路就够，管线的完整契约留给第 7 章。
+正常情况下，进入 `executeToolCalls`（`src/agent-loop.ts:411`），每个工具调用走三段管线。这里跟一遍主路就够，管线的完整契约留给第 6 章。
 
 **第一段，prepare**：找到工具、跑 `prepareArguments` 兼容层、按 schema 校验参数、问 `beforeToolCall` 是否放行。找不到工具直接变成"立即完成"的错误结果：
 
@@ -1360,7 +1360,7 @@ turn 结束后的四个决策点，按代码里的询问顺序（对照骨架引
 
 四个都落空，发 `agent_end`，`runLoop` 返回。abort 不在这条链上：它不等 turn 结束，随时生效（见"agent 循环什么时候停"的 abort 小节）。
 
-下一章把这一章路过的所有模块摆到一张图上，讲清楚谁依赖谁、依赖方向为什么是这个方向。
+下一章讲这个系统真正的支点：为什么 `AgentMessage` 这个类型是整个系统的轴心，以及守在 LLM 边界上的三道闸门。
 
 ## 为什么不去
 

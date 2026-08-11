@@ -22,7 +22,7 @@ La primera parte construye una imagen correcta del sistema completo, sin entrar 
 
 ### Primera parte · El todo
 
-Tras leer esta parte, deberías poder dibujar el sistema de memoria.
+Tras leer estos tres capítulos, deberías poder dibujar el sistema de memoria.
 
 0. [Empieza aquí](00-start-here.md)
 1. [Qué es: un bucle de agente convertido en biblioteca](01-what-it-is.md)

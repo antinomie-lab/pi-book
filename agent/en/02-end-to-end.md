@@ -203,7 +203,7 @@ You pass the callback in, your listener returns normally, settlement completes a
 
 ### Aside: two patterns—executor and signal
 
-The signature of `runWithLifecycle` holds two patterns worth unpacking; they show up again and again later (especially Chapter 14).
+The signature of `runWithLifecycle` holds two patterns worth unpacking; they show up again and again later (especially Chapter 13).
 
 **Pattern one: the executor callback ("you bring the work; I handle before and after").** `runWithLifecycle` does no work itself; it takes a function `(signal) => Promise<void>` as an argument. Why not have it call `runAgentLoop` directly? Because two callers want to share the same "before/after paperwork" but do different work—`runPromptMessages` runs `runAgentLoop`, `runContinuation` runs `runAgentLoopContinue` (`src/agent.ts:421`):
 
@@ -252,9 +252,9 @@ const response = await streamFunction(config.model, llmContext, {
 });
 ```
 
-The HTTP layer cuts the stream immediately; by the `StreamFn` contract (Chapter 4), this request ends with an assistant message whose `stopReason: "aborted"`. The loop then takes the `error || aborted` branch in the skeleton: emit `turn_end`, emit `agent_end`, return from the whole run—**without waiting for this turn to finish**.
+The HTTP layer cuts the stream immediately; by the `StreamFn` contract (Chapter 3), this request ends with an assistant message whose `stopReason: "aborted"`. The loop then takes the `error || aborted` branch in the skeleton: emit `turn_end`, emit `agent_end`, return from the whole run—**without waiting for this turn to finish**.
 
-**While executing a tool (e.g. bash still running).** The loop does not hard-kill the tool: the signal is in `execute()`'s arguments (see the quote in this chapter's "Executing tools" section); how to respond is the tool's own business—built-in bash kills the child process (Chapter 12). The loop's promise on its side is "open no new work": prepare has a check; an already-pressed signal turns not-yet-started tool calls into error results:
+**While executing a tool (e.g. bash still running).** The loop does not hard-kill the tool: the signal is in `execute()`'s arguments (see the quote in this chapter's "Executing tools" section); how to respond is the tool's own business—built-in bash kills the child process (Chapter 11). The loop's promise on its side is "open no new work": prepare has a check; an already-pressed signal turns not-yet-started tool calls into error results:
 
 ```typescript
 // src/agent-loop.ts:644 (inside prepareToolCall)
@@ -457,7 +457,7 @@ export interface ToolResultMessage {
 }
 ```
 
-Three roles, and that is the ceiling—the system prompt is not in this array; it is a separate field on `Context`, attached with each request. As for what to do if an application wants a fourth role (notifications, summary markers), that is a fulcrum question for Chapter 4; for now remember "the LLM only recognizes these three roles."
+Three roles, and that is the ceiling—the system prompt is not in this array; it is a separate field on `Context`, attached with each request. As for what to do if an application wants a fourth role (notifications, summary markers), that is a fulcrum question for Chapter 3; for now remember "the LLM only recognizes these three roles."
 
 Note the type of `AssistantMessage.content`: **not a string, but an array of content blocks**. One assistant message is a sequence of blocks, each one of three:
 
@@ -569,7 +569,7 @@ That is the semantics of raising the flag: **"the tool result is the final answe
 
 There is a second entrance for the flag: the tool itself does not raise it; the `afterToolCall` hook raises it at finalize—`finalizeExecutedToolCall`'s field-by-field merge has `terminate: afterResult.terminate ?? result.terminate` (visible in the quote in this chapter's "Executing tools" section). That makes "whether to end early" a host-interceptable decision, not only a hard-code by the tool author.
 
-Ask the reverse to think it through: **which tool results are not the final answer?** Almost every tool in this loop. Look at the four built-ins (Chapter 12 covers them in detail): `read`'s result is a stretch of file content—not an answer, but **material**; the model must finish reading before it can answer "what does this function do"; `bash` test output is a pile of output—the model must look before it knows which line to fix; `edit`'s result is a diff—the model must confirm the change was right before deciding the next step. These tools' information flow is **bidirectional**: arguments are instructions the model issued; results are observations fed back to the model; the loop's value sits in the "observe → decide → act again" round trip.
+Ask the reverse to think it through: **which tool results are not the final answer?** Almost every tool in this loop. Look at the four built-ins (Chapter 11 covers them in detail): `read`'s result is a stretch of file content—not an answer, but **material**; the model must finish reading before it can answer "what does this function do"; `bash` test output is a pile of output—the model must look before it knows which line to fix; `edit`'s result is a diff—the model must confirm the change was right before deciding the next step. These tools' information flow is **bidirectional**: arguments are instructions the model issued; results are observations fed back to the model; the loop's value sits in the "observe → decide → act again" round trip.
 
 Tools like `structured_output` are **unidirectional**: the arguments themselves are the finished product (the model had already finished thinking when it initiated the call); the tool result is only a "saved" receipt—feed the receipt back to the model and it has nothing to say. So deciding whether a tool should raise the flag takes one sentence: **after this toolResult returns to the model's hands, does the model still have meaningful work to do?** If yes, ordinary tool; if no, end tool.
 
@@ -630,10 +630,10 @@ The loop stops after this lap; the host takes over to compress or summarize, the
 Three more details of this example are worth clarifying.
 
 - **Threshold**: 150k is an example value; set it from the model's context window in practice—e.g. for a 200k-window model, reserve room for output and the system prompt, and brake around 150k.
-- **Estimate**: `roughTokens` is a character-count rough estimate; a real implementation would use the model's tokenizer (harness compaction has formal token accounting, Chapter 11).
+- **Estimate**: `roughTokens` is a character-count rough estimate; a real implementation would use the model's tokenizer (harness compaction has formal token accounting, Chapter 10).
 - **Granularity**: it only takes effect at turn boundaries—that is exactly what "graceful" means; it will not cut a turn mid-way, but waits until this lap is fully in the bag before stopping. If you want not to stop, but to swap context and keep running inside the same run, that is the `prepareNextTurn` Detour (this chapter's "Detour" section).
 
-The difference from abort is **who calls and when**: abort is an external hard press at any time, effective immediately; `shouldStopAfterTurn` is the loop actively asking at the turn boundary "shall we stop here with dignity"—typical when context is nearly full and the host wants it to stop this lap so it can take over for compression or summary. Placed next to `prepareNextTurn` in this chapter's later "Detour" section, they are a pair of knobs: one asks "should we stop," the other asks "should we change harness for the next lap." The contract remains "failure becomes a value": do not throw, or the event sequence breaks (Chapter 4).
+The difference from abort is **who calls and when**: abort is an external hard press at any time, effective immediately; `shouldStopAfterTurn` is the loop actively asking at the turn boundary "shall we stop here with dignity"—typical when context is nearly full and the host wants it to stop this lap so it can take over for compression or summary. Placed next to `prepareNextTurn` in this chapter's later "Detour" section, they are a pair of knobs: one asks "should we stop," the other asks "should we change harness for the next lap." The contract remains "failure becomes a value": do not throw, or the event sequence breaks (Chapter 3).
 
 #### abort: the unconditional exit
 
@@ -643,7 +643,7 @@ The difference from abort is **who calls and when**: abort is an external hard p
 
 **One lap of the outer `while (true)` = one batch of follow-up.** After the inner loop is exhausted, the loop would normally end, but first it asks the follow-up queue: if someone is queued for "one more thing while you're at it," stuff them into `pendingMessages` and `continue` so the inner loop turns again; if not, `break`. The outer loop's entire reason for existing is that one question.
 
-How `pendingMessages` is consumed is also worth a close look, because it is where the two queues converge. The inject block does three things: emit `message_start`/`message_end` one by one (for subscribers, cut-in messages have the same event sequence as ordinary messages), push into `currentContext` and `newMessages` (the next model request can see them), then clear the array (at most one batch per lap; how many in a batch depends on the queue's mode, `one-at-a-time` or `all`, Chapter 6). Note the inject point is **before calling the model**—cut-in messages always enter context ahead of the model's next reply. And when the outer loop keeps the run alive by assigning `followUpMessages` to `pendingMessages`, it walks that same inject pipeline: **steering and follow-up share one mechanism; the only difference is when they poll**—one asks after every turn, the other only when truly about to stop.
+How `pendingMessages` is consumed is also worth a close look, because it is where the two queues converge. The inject block does three things: emit `message_start`/`message_end` one by one (for subscribers, cut-in messages have the same event sequence as ordinary messages), push into `currentContext` and `newMessages` (the next model request can see them), then clear the array (at most one batch per lap; how many in a batch depends on the queue's mode, `one-at-a-time` or `all`, Chapter 5). Note the inject point is **before calling the model**—cut-in messages always enter context ahead of the model's next reply. And when the outer loop keeps the run alive by assigning `followUpMessages` to `pendingMessages`, it walks that same inject pipeline: **steering and follow-up share one mechanism; the only difference is when they poll**—one asks after every turn, the other only when truly about to stop.
 
 Why two layers, not one big while? Because the two queues' **check timing** differs: steering must be looked at after every turn (the user may cut in while the agent works); follow-up may be looked at only at the point where "the agent is truly about to stop." Merge into one loop and you must express two timings in one condition; the code grows odd flags. Two whiles each own one timing; the conditions read as the business semantics themselves.
 
@@ -670,7 +670,7 @@ export interface AgentContext {
 }
 ```
 
-`config: AgentLoopConfig` (`src/types.ts:144`) is the largest piece—model, gates, hooks, queue polling all live in it; Chapter 6 will unpack field by field. For now remember the division of labor: `context` is **data** (what to say), `config` is **behavior** (how to say it, what to do after saying it), `emit` is **the exit** (who hears it).
+`config: AgentLoopConfig` (`src/types.ts:144`) is the largest piece—model, gates, hooks, queue polling all live in it; Chapter 5 will unpack field by field. For now remember the division of labor: `context` is **data** (what to say), `config` is **behavior** (how to say it, what to do after saying it), `emit` is **the exit** (who hears it).
 
 ### Detour: swapping the snapshot between laps (prepareNextTurn)
 
@@ -827,7 +827,7 @@ prepareNextTurn: async () => {
 
 #### Another use: in-run compression
 
-And compression? As a host, coding-agent's choice is to do it **between runs**—the `shouldStopAfterTurn` path in the earlier "When the agent loop stops" section: stop on this lap, the host compresses, start a new run (Chapter 11 covers the details). But "don't interrupt the run; swap the context inside a lap" is exactly this hook's exclusive capability—the library leaves that path for hosts that need it, looking like this:
+And compression? As a host, coding-agent's choice is to do it **between runs**—the `shouldStopAfterTurn` path in the earlier "When the agent loop stops" section: stop on this lap, the host compresses, start a new run (Chapter 10 covers the details). But "don't interrupt the run; swap the context inside a lap" is exactly this hook's exclusive capability—the library leaves that path for hosts that need it, looking like this:
 
 ```typescript
 // Sketch: in-run compression (application-side code, not in the pi repo—coding-agent does compression between runs; see above)
@@ -1020,7 +1020,7 @@ const llmMessages = await config.convertToLlm(messages);
 - `transformContext` (optional): operates directly on the agent-side message array—trim old messages, inject external context. Input and output are both `AgentMessage[]`.
 - `convertToLlm` (required): translates `AgentMessage` into LLM-side `Message`. The LLM only knows three roles—`user` / `assistant` / `toolResult`—so your custom message types (e.g. "notification", "compression summary") are either converted or filtered out.
 
-These two gates are among the book's most important designs; chapter 4 expands on them. Here you only need to remember: **the loop body speaks only `AgentMessage` from start to finish; translation happens only at the LLM call boundary**—and that sentence is right in the file-header comment:
+These two gates are among the book's most important designs; chapter 3 expands on them. Here you only need to remember: **the loop body speaks only `AgentMessage` from start to finish; translation happens only at the LLM call boundary**—and that sentence is right in the file-header comment:
 
 ```typescript
 // src/agent-loop.ts:1
@@ -1142,7 +1142,7 @@ result: createErrorToolResult(
 ),
 ```
 
-In the normal case, enter `executeToolCalls` (`src/agent-loop.ts:411`); each tool call walks a three-stage pipeline. Following the main path once is enough here; the pipeline's full contract is left for chapter 7.
+In the normal case, enter `executeToolCalls` (`src/agent-loop.ts:411`); each tool call walks a three-stage pipeline. Following the main path once is enough here; the pipeline's full contract is left for chapter 6.
 
 **Stage one, prepare**: find the tool, run the `prepareArguments` compatibility layer, validate args against the schema, ask `beforeToolCall` whether to allow. A missing tool becomes an "immediately finished" error result:
 
@@ -1360,7 +1360,7 @@ The four decision points after a turn ends, in the order the code asks them (com
 
 If all four are empty, emit `agent_end` and `runLoop` returns. abort is not on this chain: it does not wait for turn end; it takes effect at any time (see the abort subsection of "When the agent loop stops").
 
-The next chapter lays every module this chapter passed onto one map, and explains who depends on whom and why the dependency arrows point that way.
+The next chapter turns to this map's true fulcrum: why the `AgentMessage` type is the axis of the whole system, and the three gates guarding the LLM boundary.
 
 ## Why not
 

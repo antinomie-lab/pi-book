@@ -203,7 +203,7 @@ Tú pasas el callback, tu listener hace return con normalidad, la liquidación t
 
 ### Digresión: dos patrones, executor y signal
 
-En la firma de `runWithLifecycle` hay dos patrones que merecen desplegarse; reaparecerán una y otra vez más adelante (sobre todo en el capítulo 14).
+En la firma de `runWithLifecycle` hay dos patrones que merecen desplegarse; reaparecerán una y otra vez más adelante (sobre todo en el capítulo 13).
 
 **Patrón uno: callback executor («tú traes el trabajo, yo gestiono el antes y el después»).** `runWithLifecycle` no hace el trabajo: recibe una función `(signal) => Promise<void>` como parámetro. ¿Por qué no llama directamente a `runAgentLoop`? Porque hay dos llamadores que quieren compartir el mismo «trámite de antes y después», pero hacen trabajos distintos — `runPromptMessages` ejecuta `runAgentLoop`, `runContinuation` ejecuta `runAgentLoopContinue` (`src/agent.ts:421`):
 
@@ -252,9 +252,9 @@ const response = await streamFunction(config.model, llmContext, {
 });
 ```
 
-La capa HTTP corta el flujo al instante; según el contrato de `StreamFn` (capítulo 4), esa petición se cierra con un mensaje assistant de `stopReason: "aborted"`. El bucle entra de inmediato en la rama `error || aborted` del esqueleto: emite `turn_end`, emite `agent_end`, y el run entero vuelve — **sin esperar a que termine ese turn**.
+La capa HTTP corta el flujo al instante; según el contrato de `StreamFn` (capítulo 3), esa petición se cierra con un mensaje assistant de `stopReason: "aborted"`. El bucle entra de inmediato en la rama `error || aborted` del esqueleto: emite `turn_end`, emite `agent_end`, y el run entero vuelve — **sin esperar a que termine ese turn**.
 
-**Está ejecutando una herramienta (por ejemplo bash aún corre).** El bucle no mata la herramienta a la fuerza: el signal va en los parámetros de `execute()` (se ve en la cita de la sección «ejecutar herramientas» de este capítulo); cómo responder es cosa de la herramienta — el bash integrado mata el subproceso (capítulo 12). La promesa del lado del bucle es «no abrir trabajo nuevo»: en la fase prepare hay una comprobación; si el signal ya está pulsado, convierte las llamadas a herramientas aún no arrancadas en resultados de error:
+**Está ejecutando una herramienta (por ejemplo bash aún corre).** El bucle no mata la herramienta a la fuerza: el signal va en los parámetros de `execute()` (se ve en la cita de la sección «ejecutar herramientas» de este capítulo); cómo responder es cosa de la herramienta — el bash integrado mata el subproceso (capítulo 11). La promesa del lado del bucle es «no abrir trabajo nuevo»: en la fase prepare hay una comprobación; si el signal ya está pulsado, convierte las llamadas a herramientas aún no arrancadas en resultados de error:
 
 ```typescript
 // src/agent-loop.ts:644 (dentro de prepareToolCall)
@@ -457,7 +457,7 @@ export interface ToolResultMessage {
 }
 ```
 
-Tres roles, y punto — el system prompt no está en este array: es un campo independiente de `Context`, y se adjunta por separado en cada petición. En cuanto a qué hacer si la aplicación quiere un cuarto rol (notificaciones, marcas de resumen), eso es el problema del punto de apoyo del capítulo 4; aquí basta recordar «el LLM solo reconoce estos tres roles».
+Tres roles, y punto — el system prompt no está en este array: es un campo independiente de `Context`, y se adjunta por separado en cada petición. En cuanto a qué hacer si la aplicación quiere un cuarto rol (notificaciones, marcas de resumen), eso es el problema del punto de apoyo del capítulo 3; aquí basta recordar «el LLM solo reconoce estos tres roles».
 
 Fíjate en el tipo de `AssistantMessage.content`: **no es una cadena, es un array de bloques de contenido**. Un mensaje assistant es una secuencia de varios bloques; cada bloque es una de tres opciones:
 
@@ -569,7 +569,7 @@ Esa es la semántica de izar la bandera: **«el resultado de la herramienta es l
 
 Hay un segundo acceso a izar la bandera: la herramienta no la iza, y el hook `afterToolCall` la iza por ella en la fase finalize — en la fusión campo a campo de `finalizeExecutedToolCall` está `terminate: afterResult.terminate ?? result.terminate` (se ve en la cita de la sección «ejecutar herramientas» de este capítulo). Así «si terminar antes» pasa a ser una decisión que el host puede interceptar, no solo un hardcode del autor de la herramienta.
 
-La pregunta al revés deja el asunto del todo claro: **¿qué resultado de herramienta no es la respuesta final?** La respuesta: casi todas las herramientas de este bucle. Mira las cuatro integradas (el capítulo 12 las detalla): el resultado de `read` es un trozo de contenido de archivo — no es la respuesta, es **material**; el modelo tiene que leerlo para responder «qué hace esta función»; el resultado de `bash` al correr tests es un montón de salida — el modelo tiene que verlo para saber qué línea arreglar; el resultado de `edit` es un diff — el modelo tiene que confirmar que el cambio está bien antes de decidir el siguiente paso. El flujo de información de estas herramientas es **bidireccional**: los parámetros son la instrucción que da el modelo; el resultado es la observación que se alimenta de vuelta; el valor del bucle está en el vaivén «observar → decidir → actuar de nuevo».
+La pregunta al revés deja el asunto del todo claro: **¿qué resultado de herramienta no es la respuesta final?** La respuesta: casi todas las herramientas de este bucle. Mira las cuatro integradas (el capítulo 11 las detalla): el resultado de `read` es un trozo de contenido de archivo — no es la respuesta, es **material**; el modelo tiene que leerlo para responder «qué hace esta función»; el resultado de `bash` al correr tests es un montón de salida — el modelo tiene que verlo para saber qué línea arreglar; el resultado de `edit` es un diff — el modelo tiene que confirmar que el cambio está bien antes de decidir el siguiente paso. El flujo de información de estas herramientas es **bidireccional**: los parámetros son la instrucción que da el modelo; el resultado es la observación que se alimenta de vuelta; el valor del bucle está en el vaivén «observar → decidir → actuar de nuevo».
 
 Herramientas como `structured_output` son **unidireccionales**: los parámetros mismos son el producto acabado (el modelo ya pensó al lanzar la llamada); el resultado de la herramienta es solo un acuse de «ya guardado» — si se alimenta de nuevo al modelo, el modelo no tiene nada que decir. Así que para decidir si una herramienta debe izar la bandera basta una frase: **cuando ese toolResult vuelve a manos del modelo, ¿le queda al modelo algo con sentido que hacer?** Si sí, es una herramienta normal; si no, es una herramienta terminal.
 
@@ -630,10 +630,10 @@ El bucle se para tras esta vuelta; el host toma el relevo para comprimir o resum
 Este ejemplo tiene tres detalles más que conviene dejar claros.
 
 - **Umbral**: 150k es un valor de ejemplo; en la práctica se fija según la context window del modelo — por ejemplo, en un modelo de ventana 200k hay que reservar espacio para la salida y el system prompt, y pisar el freno hacia los 150k.
-- **Estimación**: `roughTokens` es una estimación gruesa por número de caracteres; una implementación real usaría el tokenizer del modelo correspondiente (la compaction del harness tiene el conteo formal de tokens; capítulo 11).
+- **Estimación**: `roughTokens` es una estimación gruesa por número de caracteres; una implementación real usaría el tokenizer del modelo correspondiente (la compaction del harness tiene el conteo formal de tokens; capítulo 10).
 - **Granularidad**: solo actúa en el borde del turn — ese es el sentido de «elegante»: no corta un turn a medias, sino que espera a que esta vuelta quede completa en el saco y entonces para. Si quieres no parar y cambiar el contexto dentro del run para seguir, ese es el desvío de `prepareNextTurn` (sección «Desvío» de este capítulo).
 
-La diferencia con abort está en **quién grita y cuándo**: abort es un pulso externo fuerte en cualquier momento, con efecto inmediato; `shouldStopAfterTurn` es el bucle preguntando en el borde del turn «¿quieres parar con dignidad aquí?» — el escenario típico es que el contexto está a punto de llenarse, y el host lo hace parar en esta vuelta para tomar el relevo con compresión o resumen. Junto con el `prepareNextTurn` de la sección «Desvío» más adelante en este capítulo, son un par de pomos: uno pregunta «¿parar?», el otro «¿cambio el equipo de la siguiente vuelta?». El contrato sigue siendo «el fallo se convierte en valor»: no se puede lanzar excepciones, o se rompe la secuencia de eventos (capítulo 4).
+La diferencia con abort está en **quién grita y cuándo**: abort es un pulso externo fuerte en cualquier momento, con efecto inmediato; `shouldStopAfterTurn` es el bucle preguntando en el borde del turn «¿quieres parar con dignidad aquí?» — el escenario típico es que el contexto está a punto de llenarse, y el host lo hace parar en esta vuelta para tomar el relevo con compresión o resumen. Junto con el `prepareNextTurn` de la sección «Desvío» más adelante en este capítulo, son un par de pomos: uno pregunta «¿parar?», el otro «¿cambio el equipo de la siguiente vuelta?». El contrato sigue siendo «el fallo se convierte en valor»: no se puede lanzar excepciones, o se rompe la secuencia de eventos (capítulo 3).
 
 #### abort: salida incondicional
 
@@ -643,7 +643,7 @@ La granularidad de `agent.abort()` merece subrayarse otra vez en el contexto de 
 
 **Una vuelta del `while (true)` exterior = un lote de follow-up.** Cuando el interior se agota, el bucle debería terminar, pero primero pregunta a la cola de follow-up: si alguien hace cola de «de paso, haz otra cosa», las mete en `pendingMessages`, hace `continue` y deja que el interior vuelva a girar; si no, `break`. La razón entera de existir del exterior es esa pregunta.
 
-La forma de consumir `pendingMessages` también merece un vistazo fino, porque es el punto donde confluyen las dos colas. El bloque de inyección hace tres cosas: emitir `message_start`/`message_end` uno a uno (para el suscriptor, la secuencia de eventos de un mensaje colado es idéntica a la de uno normal), empujar a `currentContext` y `newMessages` (la siguiente petición al modelo lo verá), y luego vaciar el array (como máximo se inyecta un lote por vuelta; cuántas van en un lote lo decide el mode de la cola, `one-at-a-time` o `all`; capítulo 6). Fíjate en el punto de inyección: **antes de llamar al modelo** — el mensaje colado entra siempre al contexto antes de la siguiente respuesta del modelo. Y cuando el exterior alarga la vida asignando `followUpMessages` a `pendingMessages`, usa exactamente el mismo conducto de inyección: **steering y follow-up comparten un solo mecanismo; la diferencia solo está en el momento del poll** — uno pregunta tras cada turn, el otro solo cuando de verdad va a parar.
+La forma de consumir `pendingMessages` también merece un vistazo fino, porque es el punto donde confluyen las dos colas. El bloque de inyección hace tres cosas: emitir `message_start`/`message_end` uno a uno (para el suscriptor, la secuencia de eventos de un mensaje colado es idéntica a la de uno normal), empujar a `currentContext` y `newMessages` (la siguiente petición al modelo lo verá), y luego vaciar el array (como máximo se inyecta un lote por vuelta; cuántas van en un lote lo decide el mode de la cola, `one-at-a-time` o `all`; capítulo 5). Fíjate en el punto de inyección: **antes de llamar al modelo** — el mensaje colado entra siempre al contexto antes de la siguiente respuesta del modelo. Y cuando el exterior alarga la vida asignando `followUpMessages` a `pendingMessages`, usa exactamente el mismo conducto de inyección: **steering y follow-up comparten un solo mecanismo; la diferencia solo está en el momento del poll** — uno pregunta tras cada turn, el otro solo cuando de verdad va a parar.
 
 ¿Por qué hacen falta dos capas, y no un while grande? Porque el **momento de comprobación** de las dos colas es distinto: steering hay que mirarlo tras cada turn (el usuario se cuela en cualquier momento mientras el agent trabaja); follow-up solo se mira en el punto de «el agent de verdad va a parar». Si se funden en un solo bucle, hay que expresar dos momentos en la misma condición, y el código echa banderas raras; dos while, cada uno un momento, y la condición se lee como la semántica del negocio misma.
 
@@ -670,7 +670,7 @@ export interface AgentContext {
 }
 ```
 
-`config: AgentLoopConfig` (`src/types.ts:144`) es el bloque más grande — modelo, compuertas, hooks, polling de colas, todo está ahí; el capítulo 6 lo desmonta campo a campo. Aquí basta recordar la división: `context` es **datos** (qué decir), `config` es **comportamiento** (cómo decirlo, qué hacer al terminar), `emit` es **salida** (a quién se lo dices).
+`config: AgentLoopConfig` (`src/types.ts:144`) es el bloque más grande — modelo, compuertas, hooks, polling de colas, todo está ahí; el capítulo 5 lo desmonta campo a campo. Aquí basta recordar la división: `context` es **datos** (qué decir), `config` es **comportamiento** (cómo decirlo, qué hacer al terminar), `emit` es **salida** (a quién se lo dices).
 
 ### Desvío: cambiar la instantánea entre dos vueltas (prepareNextTurn)
 
@@ -827,7 +827,7 @@ prepareNextTurn: async () => {
 
 #### Otro uso: compresión dentro del run
 
-¿Y la compresión? Como host, la elección de coding-agent es **hacerla entre runs**—el camino de shouldStopAfterTurn en «Cuándo se para el bucle de agente»: parar en esta vuelta, el host comprime, abrir un run nuevo (el capítulo 11 lo detalla). Pero «no interrumpir el run y cambiar el contexto dentro de la vuelta» es precisamente la capacidad exclusiva de este gancho—la biblioteca deja ese camino a los hosts que lo necesiten, así:
+¿Y la compresión? Como host, la elección de coding-agent es **hacerla entre runs**—el camino de shouldStopAfterTurn en «Cuándo se para el bucle de agente»: parar en esta vuelta, el host comprime, abrir un run nuevo (el capítulo 10 lo detalla). Pero «no interrumpir el run y cambiar el contexto dentro de la vuelta» es precisamente la capacidad exclusiva de este gancho—la biblioteca deja ese camino a los hosts que lo necesiten, así:
 
 ```typescript
 // Esquema: compresión dentro del run (código del lado de la aplicación, no está en el repo de pi — coding-agent pone la compresión entre runs, véase arriba)
@@ -1020,7 +1020,7 @@ const llmMessages = await config.convertToLlm(messages);
 - `transformContext` (opcional): opera directamente sobre el array de mensajes del lado agent — recortar mensajes viejos, inyectar contexto externo. Entrada y salida son `AgentMessage[]`.
 - `convertToLlm` (obligatorio): traduce `AgentMessage` al `Message` del lado LLM. El LLM solo conoce tres roles: `user`/`assistant`/`toolResult`; tus tipos de mensaje personalizados (p. ej. "notificación", "resumen de compresión") o se convierten o se filtran.
 
-Estas dos compuertas son uno de los diseños más importantes del libro; el capítulo 4 las desarrolla. Aquí basta recordar: **el cuerpo del bucle habla solo `AgentMessage` de principio a fin; la traducción ocurre únicamente en el límite de la llamada al LLM** — eso mismo está escrito en el comentario de cabecera del archivo:
+Estas dos compuertas son uno de los diseños más importantes del libro; el capítulo 3 las desarrolla. Aquí basta recordar: **el cuerpo del bucle habla solo `AgentMessage` de principio a fin; la traducción ocurre únicamente en el límite de la llamada al LLM** — eso mismo está escrito en el comentario de cabecera del archivo:
 
 ```typescript
 // src/agent-loop.ts:1
@@ -1142,7 +1142,7 @@ result: createErrorToolResult(
 ),
 ```
 
-En el caso normal se entra en `executeToolCalls` (`src/agent-loop.ts:411`); cada tool call sigue una tubería de tres tramos. Aquí basta seguir la vía principal; el contrato completo de la tubería queda para el capítulo 7.
+En el caso normal se entra en `executeToolCalls` (`src/agent-loop.ts:411`); cada tool call sigue una tubería de tres tramos. Aquí basta seguir la vía principal; el contrato completo de la tubería queda para el capítulo 6.
 
 **Primer tramo, prepare**: encontrar la herramienta, pasar la capa de compatibilidad `prepareArguments`, validar argumentos contra el schema, preguntar a `beforeToolCall` si deja pasar. Si no se encuentra la herramienta, se convierte de inmediato en un resultado de error "ya terminado":
 
@@ -1360,7 +1360,7 @@ Los cuatro puntos de decisión tras el fin de un turn, en el orden en que el có
 
 Si los cuatro fallan en vacío, se emite `agent_end` y `runLoop` retorna. abort no está en esta cadena: no espera al fin del turn; actúa en cualquier momento (véase el apartado abort de "Cuándo se para el bucle de agente").
 
-El siguiente capítulo pone en un mapa todos los módulos por los que pasó este, y aclara quién depende de quién y por qué la dirección de dependencia es esa.
+El siguiente capítulo va al verdadero punto de apoyo de este mapa: por qué el tipo `AgentMessage` es el eje de todo el sistema, y las tres compuertas que vigilan la frontera con el LLM.
 
 ## ¿Por qué no?
 

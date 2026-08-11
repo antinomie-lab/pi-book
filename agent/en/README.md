@@ -22,7 +22,7 @@ Part One builds a correct mental model of the whole system, without touching imp
 
 ### Part One · The whole
 
-When you finish this part, you should be able to draw the system from memory.
+When you finish these three chapters, you should be able to draw the system from memory.
 
 0. [Start here](00-start-here.md)
 1. [What it is: an agent loop packaged as a library](01-what-it-is.md)

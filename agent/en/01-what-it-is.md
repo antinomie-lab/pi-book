@@ -60,20 +60,66 @@ let tools = initialState?.tools?.slice() ?? [];
 let messages = initialState?.messages?.slice() ?? [];
 ```
 
-When the process exits, everything resets. Persistence exists, but it lives in the harness layer (Chapter 10), and its model is "append entries to a tree"—the core loop knows nothing about it.
+When the process exits, everything resets. Persistence exists, but it lives in the harness layer (Chapter 9), and its model is "append entries to a tree"—the core loop knows nothing about it.
 
-**Refusal four: the core does not touch runtime APIs.** Across the seven files at the root of `src/`, there is no `node:fs`, no `node:child_process`. All file and shell access is forced behind an interface (`ExecutionEnv`, covered in detail in Chapter 4); the sole Node implementation is isolated in `harness/env/nodejs.ts` and exported through a separate `./node` entry:
+**Refusal four: the core does not touch runtime APIs.** Across the seven files at the root of `src/`, there is no `node:fs`, no `node:child_process`. All file and shell access is forced behind an interface (`ExecutionEnv`, covered in detail in Chapter 3); the sole Node implementation is isolated in `harness/env/nodejs.ts`.
+
+The `exports` field of `package.json` cuts this boundary into three public faces:
 
 ```json
 // package.json — exports (trimmed)
-".":              { "import": "./dist/index.js" },
-"./node":         { "import": "./dist/node.js" },
-"./experimental": { "import": "./dist/experimental.js" }
+".":                              "./dist/index.js",
+"./node":                         "./dist/node.js",
+"./experimental":                 "./dist/experimental.js",
+"./experimental/session/testing": "./dist/harness/experimental/session/testing/index.js"
+```
+
+| Entry | Contents | Implied promise |
+|---|---|---|
+| `.` | core layer + nearly all of the harness | no `node:*` import anywhere; can run in a browser |
+| `./node` | `NodeExecutionEnv` | the sole Node binding, explicit opt-in |
+| `./experimental` | `experimental/session/` | in progress; the contract can change |
+
+This cut is not a packaging convenience; it is an architectural statement: **"which part of the code dares to touch runtime APIs" is elevated to the height of the package boundary**. That the main entry can serve a browser does not rely on documentary goodwill—it relies on `node:fs` being physically absent from the main entry's entire dependency closure. That is not rhetoric: in the whole package (tests excepted), exactly one file imports `node:*`, and here it is:
+
+```typescript
+// src/harness/env/nodejs.ts:1 (import block, trimmed: five more node:* lines and ../types.ts)
+import { type ChildProcess, spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { constants, createReadStream } from "node:fs";
 ```
 
 So the core of this package can run in a browser—`src/proxy.ts` is prepared for exactly that.
 
-## Three layers, not one
+## The flip side of the refusals: model, storage, runtime
+
+Three of the four refusals leave a spot that can be swapped out wholesale, each in a different way:
+
+1. **streamFn**: the loop's entire dependency on the model layer is one function shape (quoted under "Refusal one" above, `src/types.ts:28`). Swapping the provider library, swapping in a proxy, swapping in a mock—all of these mean passing in a different function. This is replacement by injection.
+2. **Session backend**: the contract is an interface with five methods:
+
+```typescript
+// src/harness/session/repository.ts:22
+export interface SessionRepository<
+	TMetadata extends SessionMetadata = SessionMetadata,
+	TCreateOptions extends SessionCreateOptions = SessionCreateOptions,
+	TListOptions = void,
+> extends AsyncDisposable {
+	create(options: TCreateOptions): Promise<Session<TMetadata>>;
+	open(metadata: TMetadata): Promise<Session<TMetadata>>;
+	list(options?: TListOptions): Promise<TMetadata[]>;
+	delete(metadata: TMetadata): Promise<void>;
+	fork(source: TMetadata, options: SessionForkOptions & TCreateOptions): Promise<Session<TMetadata>>;
+}
+```
+
+The repo ships two implementations, JSONL and in-memory, and `experimental` carries a conformance test suite for vetting third-party backends (Chapter 14). This is replacement by interface.
+
+3. **ExecutionEnv**: the capability interface for every file/shell operation (covered in detail in Chapter 3). The Node implementation is one option; in a browser you can swap in a remote execution environment. This is replacement by capability.
+
+The three replacement styles correspond to three coupling strengths: function injection is the loosest (it can change on every call), interface implementation sits in the middle (fixed at construction), and the capability interface is the heaviest (the behavior of the entire tool layer is built on top of it).
+
+## One loop: two compositions
 
 The easiest misunderstanding about this package is: what is the relationship between the `Agent` class and the `AgentHarness` class? Inheritance? Wrapping?
 
@@ -123,15 +169,131 @@ return await runAgentLoop(
 );
 ```
 
-Notice that the shape of the two calls is almost the same—context, loop config, event callback, signal, stream function—but the sources of the arguments are entirely different: `Agent` supplies an in-memory snapshot; `AgentHarness` supplies a per-turn snapshot (`turnState`). `AgentHarness` is not a subclass of `Agent`, nor a wrapper around it: it is another composition over the same loop primitive, only with far more composed in—persistence, compaction, hooks, a phase state machine.
+Notice that the shape of the two calls is almost the same—context, loop config, event callback, signal, stream function—but the sources of the arguments are entirely different: `Agent` supplies an in-memory snapshot; `AgentHarness` supplies a per-turn snapshot (`turnState`). `AgentHarness` is not a subclass of `Agent`, nor a wrapper around it: it is another composition over the same loop primitive, only with far more composed in—persistence, compaction, hooks, a mutual-exclusion gate between the big operations.
 
-Why keep both layers? Because they are "heavy" in different ways. Embed a chat panel and `Agent` is enough; build a coding agent and use `AgentHarness`. There is only one loop. That is this package's first structural virtue: **complex capability is composed in; the loop itself does not grow more complex.**
+Why keep both layers? Because they are "heavy" in different ways. Embed a chat panel and `Agent` is enough; build a coding agent and use `AgentHarness`. There is only one copy of the loop itself. That is this package's first structural virtue: **complex capability is composed in; the loop itself does not grow more complex.**
+
+## The file map: the whole package at a glance
+
+The last section looked at the layered skeleton; now pull the camera back one more notch and look at the file map of the whole architecture. This map draws **logical relationships**: which modules exist, and which layer each belongs to. Some of the names you have already seen (`Agent`, `runAgentLoop`, `StreamFn`); some you have not (session, compaction, tools). Next chapter follows one call end to end, and you will see what each of them actually does.
+
+```diagram-filemap
+                        ┌─────────────────────────┐
+                        │   @earendil-works/pi-ai │  (another package: providers, Model types)
+                        └───────────┬─────────────┘
+                                    │ types + the StreamFn shape only
+        ┌───────────────────────────┼────────────────────────────────────────┐
+        │                           ▲                                        │
+        │  ┌───────────────────────────────────────────────┐                 │
+        │  │ Core layer (src/ root, ~2.3k lines)           │                 │
+        │  │  types.ts ── the type foundation              │                 │
+        │  │  agent-loop.ts ── the stateless loop          │                 │
+        │  │  agent.ts ── Agent class (stateful wrapper)   │                 │
+        │  │  stream-fn.ts / proxy.ts                      │                 │
+        │  └───────▲──────────────────▲────────────────────┘                 │
+        │          │                  │                                      │
+        │  ┌───────┴──────────────────┴────────────────────┐                 │
+        │  │ Harness layer (src/harness/, ~10k lines)      │                 │
+        │  │  agent-harness.ts ── AgentHarness             │                 │
+        │  │  types.ts ── the harness type hub             │                 │
+        │  │  messages.ts ── custom message roles          │                 │
+        │  │  session/ ── persistence (entry tree + JSONL) │                 │
+        │  │  compaction/ ── context compaction            │                 │
+        │  │  tools/ ── the four built-in tools            │                 │
+        │  │  skills.ts / prompt-templates.ts              │                 │
+        │  │  env/nodejs.ts ── the only Node implementation│ ← ./node        │
+        │  │  experimental/session/ ── durable v2 sessions │ ← ./experimental│
+        │  └───────────────────────────────────────────────┘                 │
+        └────────────────────────────────────────────────────────────────────┘
+```
+
+(Arrows follow the import direction, pointing at the depended-upon side—the pattern in that direction itself is the next section's business.)
+
+The main entry's export list is the table of contents for this map—the core trio first, then the harness submodules exported by name; the contents of `./node` and `./experimental` are deliberately absent:
+
+```typescript
+// src/index.ts:1 (trimmed)
+export * from "./agent.ts";
+export * from "./agent-loop.ts";
+export * from "./harness/agent-harness.ts";
+export * from "./harness/messages.ts";
+export { JsonlSessionRepository, /* ... */ } from "./harness/session/jsonl-repo.ts";
+export * from "./harness/skills.ts";
+export * from "./harness/tools/index.ts";
+export * from "./harness/types.ts";
+export * from "./proxy.ts";
+export * from "./types.ts";
+```
+
+## Decoupling: core doesn't know harness
+
+The last section was a logical map, answering "what is there"; this one looks only at **import relationships**, answering "who depends on whom" (external packages omitted):
+
+```diagram-deps
+Core layer                               harness layer
+
+types.ts   ◀╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌  harness/types.ts
+            (harness references core types: import type via the
+             barrel, erased at compile time)
+   ▲                                        ▲
+stream-fn.ts                             session/ · compaction/ · tools/
+   ▲                                        ▲
+agent-loop.ts  ◀━━━━━━━━━━━━━━━━━━━━━━━  agent-harness.ts
+                (the only value imported from the core layer
+                 is the runAgentLoop function)
+   ▲
+agent.ts
+(one wrapper around the loop)
+```
+
+Two leaves are not drawn: `env/nodejs.ts` and `experimental/` are referenced only by their own entry files (`node.ts` / `experimental.ts`)—in the main entry's dependency closure, they physically do not exist.
+
+The dependency graph is nearly a tree, and **every arrow points upstream**. Two details are worth pausing on:
+
+- When `harness/types.ts` references core types, it goes through the `../index.ts` barrel, and as `import type`—the whole line is erased at compile time and forms no runtime dependency. Inside the harness, only the core's public surface is touched:
+
+```typescript
+// src/harness/types.ts:12
+import type {
+	AgentEvent,
+	AgentMessage,
+	AgentTool,
+	AgentToolResult,
+	AgentToolUpdateCallback,
+	QueueMode,
+	ThinkingLevel,
+} from "../index.ts";
+```
+
+- The three subdirectories session, compaction, and tools **do not import each other**—anything meant to be shared must first float up to `harness/types.ts`; lateral dependencies are gathered in by this hub.
+
+Two directional facts can now be given their evidence.
+
+**No file in the harness imports `agent.ts`.** "One loop: two compositions" proved from the call relationships that the two classes do not depend on each other; the evidence on the import side is more direct—`AgentHarness`'s own import block takes exactly one value from the core layer, `runAgentLoop`, and everything else lives in its own directory:
+
+```typescript
+// src/harness/agent-harness.ts:11 (import block, trimmed: pi-ai and two type imports; all value imports shown)
+import { runAgentLoop } from "../agent-loop.ts";
+import { collectEntriesForBranchSummary, generateBranchSummary } from "./compaction/branch-summarization.ts";
+import { compact, DEFAULT_COMPACTION_SETTINGS, prepareCompaction } from "./compaction/compaction.ts";
+import { convertToLlm } from "./messages.ts";
+import { formatPromptTemplateInvocation } from "./prompt-templates.ts";
+import { formatSkillInvocation } from "./skills.ts";
+import { AgentHarnessError, /* ... */, toError } from "./types.ts";
+```
+
+You can verify the reverse yourself: grep `from "../agent.ts"` across all of `src/harness/`—zero hits.
+
+**`agent.ts` does not know the harness exists either.** Upper layers depend on lower layers; lower layers know nothing about the upper ones. If you wanted to delete the entire harness directory, the core layer would not need a single import changed—except for the export list in `src/index.ts`.
 
 ## Chapter summary
 
 - `pi-agent-core` is an agent-loop library: loop, state, and harness in three layers.
 - It knows no model vendor, does not touch UI, does not persist in the core, and does not touch runtime APIs in the core.
 - `Agent` and `AgentHarness` are two compositions over the same loop primitive; they do not depend on each other.
+- Three export entries declare the runtime boundary: the main entry has no `node:*`, the Node binding is an explicit opt-in, and the experimental work is quarantined on its own.
+- streamFn, the Session backend, and ExecutionEnv are three replaceable points, corresponding to replacement by injection, by interface, and by capability.
+- The dependency graph is nearly a tree with every arrow pointing upstream: `types.ts` is the foundation, the loop sits above it, the two stateful classes stand side by side, and the harness submodules share only `harness/types.ts` laterally.
 
 Next chapter we stop talking about positioning. We follow a real `prompt()` call and walk the loop from start to finish.
 
@@ -153,3 +315,5 @@ Next chapter we stop talking about positioning. We follow a real `prompt()` call
 > ```
 >
 > The comment states the motive (`src/stream-fn.ts:9`): a model catalog will swell (every vendor, every model, every price), while the loop's contract needs only a function shape. Depend on a type, not on a catalog—that is why `StreamFn` exists.
+
+> **Why not have AgentHarness extend or wrap Agent?** The moment you do that, every architectural decision in `Agent` gets dragged into the harness: messages live only in an in-memory array, gone when the process exits; every event has to be awaited subscriber by subscriber before it counts as done; every run is welded to a single AbortController. But what the harness wants is exactly the other set of things: messages projected from a session tree (Chapter 9), events written to disk before they are dispatched, and operations like running a turn, compacting, or switching branches let through one at a time (a `phase` field acting as a mutex: anything not `idle` gets rejected). The two lifecycles are just too different in weight. Inheritance would weld them together; composition lets each have its own complexity—`agent-loop.ts` stays at 792 lines while the harness is free to grow to 10k. `docs/agent-harness.md` positions it the same way: "the orchestration layer above the low-level agent loop"—an orchestration layer over the loop, carrying a whole lifecycle of its own.
