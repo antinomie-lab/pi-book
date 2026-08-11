@@ -1,6 +1,6 @@
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { computed, createApp, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import MarkdownIt from "markdown-it";
 import hljs from "highlight.js/lib/core";
 import typescript from "highlight.js/lib/languages/typescript";
@@ -8,6 +8,8 @@ import json from "highlight.js/lib/languages/json";
 import bash from "highlight.js/lib/languages/bash";
 import { getChapter, getChapters } from "../chapters";
 import { useLocale } from "../i18n/locale.js";
+import DiagramFileMap from "../components/diagrams/DiagramFileMap.vue";
+import DiagramDeps from "../components/diagrams/DiagramDeps.vue";
 
 hljs.registerLanguage("typescript", typescript);
 hljs.registerLanguage("json", json);
@@ -27,6 +29,24 @@ const md = new MarkdownIt({
     return "";
   },
 });
+
+/* ADR-0001: fences tagged `diagram-*` are rich blocks. The engine swaps
+ * them for a mount slot (the component is mounted post-render); every
+ * other markdown reader — GitHub included — falls back to the plain
+ * ASCII the block still carries. Unknown diagram tags stay untouched. */
+const DIAGRAM_COMPONENTS = {
+  "diagram-filemap": DiagramFileMap,
+  "diagram-deps": DiagramDeps,
+};
+
+const defaultFence = md.renderer.rules.fence;
+md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+  const info = tokens[idx].info.trim().split(/\s+/)[0] ?? "";
+  if (info in DIAGRAM_COMPONENTS) {
+    return `<div class="diagram-slot" data-diagram="${md.utils.escapeHtml(info)}"></div>`;
+  }
+  return defaultFence(tokens, idx, options, env, self);
+};
 
 /* stable, shareable heading ids — stamped at render time so deep links
  * survive later edits to the surrounding text */
@@ -57,6 +77,28 @@ md.core.ruler.push("heading-anchors", (state) => {
 });
 
 const route = useRoute();
+const router = useRouter();
+
+/* diagram slots live inside v-html, so the engine mounts a small app per
+ * slot after render (with the router attached for chapter jumps) and
+ * tears them down before the body is replaced */
+const diagramApps = [];
+
+function mountDiagrams(root) {
+  for (const slot of root?.querySelectorAll(".diagram-slot[data-diagram]") ??
+    []) {
+    const comp = DIAGRAM_COMPONENTS[slot.dataset.diagram];
+    if (!comp) continue;
+    const app = createApp(comp);
+    app.use(router);
+    app.mount(slot);
+    diagramApps.push(app);
+  }
+}
+
+function unmountDiagrams() {
+  for (const app of diagramApps.splice(0)) app.unmount();
+}
 const { locale, t } = useLocale();
 const chapters = computed(() => getChapters(locale.value));
 const chapter = computed(
@@ -456,14 +498,19 @@ onMounted(() =>
     setupCodeBlocks();
     classifyBlockquotes(bodyRef.value);
     linkifySourceRefs(bodyRef.value);
+    mountDiagrams(bodyRef.value);
     applyDefaultPin();
     updateActive();
     scrollToHash();
   }),
 );
-onUnmounted(teardownCodeBlocks);
+onUnmounted(() => {
+  teardownCodeBlocks();
+  unmountDiagrams();
+});
 watch(html, async () => {
   teardownCodeBlocks();
+  unmountDiagrams();
   pinned.value = [];
   pinnedEls.clear();
   for (const timer of pinTimers.values()) clearTimeout(timer);
@@ -473,6 +520,7 @@ watch(html, async () => {
   setupCodeBlocks();
   classifyBlockquotes(bodyRef.value);
   linkifySourceRefs(bodyRef.value);
+  mountDiagrams(bodyRef.value);
   applyDefaultPin();
   updateActive();
   scrollToHash();
