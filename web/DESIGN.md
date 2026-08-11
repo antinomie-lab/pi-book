@@ -116,7 +116,7 @@
 - 图的视觉词汇与全站一致：文件名等宽、标注无衬线、墨色细线箭头、胶囊形芯片（`--radius`）、蓝色只标记"可点击跳章"。**芯片名里的 `/` 不做分色**——结尾斜杠表目录是命令行约定（`ls -F`），读者看得懂；曾试过"目录斜杠墨色、分隔斜杠淡化"，结果 `experimental/session/` 这种同时含两种斜杠的名字被读成两个备选，歧义比原问题更大（目录芯片填色也试过，视觉上过重）。
 - **跳章要诚实**：模块指向的章节未上线时，caption 显示"第 N 章（写作中）"而不是给一个死链；已上线的章节（当前 1、2）才可点。
 - 首个实例：`diagram-filemap`（01 章文件全貌图，`src/components/diagrams/DiagramFileMap.vue`）——hover 芯片出 caption（模块说明 + 所在章节），点击跳章；无 hover 时 caption 显示这张图本身是什么（`captionDefault`），不留上一个模块的半截描述，滚动即复位。**图内灰字分两档**：承载语义的注记（边界说明、"只有类型 + StreamFn 形状"、idle caption 的主句）用 `--ink-soft`——它们是要被读的；纯定位元数据（包名标签、行数、芯片徽章、操作提示）用 `--ink-faint`。
-- **组件库**：所有 `diagram-*` 组件及其图形原语集中在 `src/components/diagrams/`（如 `DiagramArrow`——`len` 定长度、`dir` 定方向（up/down/left/right，斜箭头就是旋转的竖箭头）、`dashed` 标记编译期擦除的边，颜色吃 `currentColor` 由父级染色），不占用站点全局样式。
+- **组件库**：所有 `diagram-*` 组件、图形原语和图表排版集中在 `src/components/diagrams/`（`DiagramArrow`——`len` 定长、`dir` 定向、`dashed` 标记编译期擦除的边，颜色吃 `currentColor` 由父级染色；`DiagramEdgeH`/`DiagramEdgeV` 流式连接——柄部填满轨道，长度即真实距离；`tables.css` 表格寄存——booktabs 式只画横线、表头小号淡灰、首列不折行，由 `Chapter.vue` 引入一次），不进站点全局样式。
 - 第二个实例：`diagram-deps`（01 章依赖方向图，`DiagramDeps.vue`）——主角是边不是节点：节点用纯等宽文字（不套芯片，不暗示交互），跨边界的两条边是全图论点——类型导入画虚线（编译后擦除），唯一的值导入 `runAgentLoop` 用全站唯一的蓝（蓝色属于循环本身）。无边注记独占一行 grid 行，与节点中线严格对齐。
 
 ## 9. 文案与语气

@@ -10,6 +10,8 @@ import { getChapter, getChapters } from "../chapters";
 import { useLocale } from "../i18n/locale.js";
 import DiagramFileMap from "../components/diagrams/DiagramFileMap.vue";
 import DiagramDeps from "../components/diagrams/DiagramDeps.vue";
+/* the engine library also owns the table register (ADR-0001) */
+import "../components/diagrams/tables.css";
 
 hljs.registerLanguage("typescript", typescript);
 hljs.registerLanguage("json", json);

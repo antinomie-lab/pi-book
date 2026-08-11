@@ -1,0 +1,45 @@
+/* tables.css — the engine library's table register (ADR-0001).
+ * Tables in book markdown are figures too, so their styling lives in
+ * the diagrams library, not the site's global stylesheet.
+ *
+ * booktabs, not grids: horizontal rules only, quiet header, no zebra,
+ * no card — the site's "ink lines on paper" register. Loaded once by
+ * Chapter.vue; selectors hang off .chapter-body like the rest of the
+ * prose styles. */
+
+.chapter-body table {
+  display: block; /* lets narrow viewports scroll sideways */
+  overflow-x: auto;
+  width: 100%;
+  margin: 32px 0 28px;
+  border-collapse: collapse;
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+.chapter-body th {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+  text-align: left;
+  padding: 0 24px 8px 0;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.chapter-body td {
+  padding: 11px 24px 11px 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+/* keys never wrap mid-token (./experimental breaking in two was the
+ * motivation); the table's sideways scroll absorbs any overflow */
+.chapter-body td:first-child {
+  white-space: nowrap;
+}
+
+.chapter-body tbody tr:last-child td {
+  border-bottom: none;
+}
