@@ -4,8 +4,10 @@
  * (https://www.trovecn.dev/docs/components/menu): icon trigger, radio group
  * for the active locale, spring-ish popup. Built in Vue to match this reader.
  */
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useLocale } from "../i18n/locale.js";
+import { createMorph } from "morphicons/dom";
+import { LANG_WORDS } from "../i18n/lang-words.js";
 
 const { locale, locales, t, setLocale } = useLocale();
 
@@ -15,9 +17,32 @@ const menuRef = ref(null);
 const triggerRef = ref(null);
 const activeIndex = ref(-1);
 
-const currentLabel = computed(
-  () => locales.find((l) => l.code === locale.value)?.native ?? locale.value,
-);
+/* the trigger label is the locale's own name as glyph outlines, morphing
+ * between words on switch (morphicons on a raw path; fill-rule evenodd
+ * keeps counters hollow regardless of vertex order) */
+const wordRef = ref(null);
+const box = ref({ ...LANG_WORDS[locale.value] });
+const initialD = LANG_WORDS[locale.value].d;
+let morph = null;
+let boxTween = null;
+
+function tweenBox(target) {
+  if (boxTween) cancelAnimationFrame(boxTween);
+  const from = { ...box.value };
+  const t0 = performance.now();
+  const DUR = 450;
+  const step = (now) => {
+    const p = Math.min(1, (now - t0) / DUR);
+    const e = 1 - Math.pow(1 - p, 3);
+    box.value = {
+      w: from.w + (target.w - from.w) * e,
+      minY: from.minY + (target.minY - from.minY) * e,
+      h: from.h + (target.h - from.h) * e,
+    };
+    if (p < 1) boxTween = requestAnimationFrame(step);
+  };
+  boxTween = requestAnimationFrame(step);
+}
 
 function close() {
   open.value = false;
@@ -97,15 +122,23 @@ function onKeydown(e) {
 onMounted(() => {
   document.addEventListener("pointerdown", onDocPointer);
   document.addEventListener("keydown", onKeydown);
+  morph = createMorph(wordRef.value, initialD);
 });
 onUnmounted(() => {
   document.removeEventListener("pointerdown", onDocPointer);
   document.removeEventListener("keydown", onKeydown);
+  morph?.destroy();
+  if (boxTween) cancelAnimationFrame(boxTween);
 });
 
-watch(locale, () => {
+watch(locale, (code) => {
   // keep menu selection in sync if locale changes elsewhere
-  activeIndex.value = locales.findIndex((l) => l.code === locale.value);
+  activeIndex.value = locales.findIndex((l) => l.code === code);
+  const target = LANG_WORDS[code];
+  if (target) {
+    morph?.morphTo(target.d, "smooth");
+    tweenBox(target);
+  }
 });
 </script>
 
@@ -121,16 +154,20 @@ watch(locale, () => {
       :aria-expanded="open"
       @click="toggle"
     >
-      <svg class="lang-icon" viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.6" />
+      <svg
+        class="lang-word"
+        :width="box.w"
+        :height="box.h"
+        :viewBox="`0 ${box.minY} ${box.w} ${box.h}`"
+        aria-hidden="true"
+      >
         <path
-          d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.6"
+          ref="wordRef"
+          fill="currentColor"
+          fill-rule="evenodd"
+          :d="initialD"
         />
       </svg>
-      <span class="lang-code">{{ currentLabel }}</span>
     </button>
 
     <Transition name="lang-pop">
@@ -171,9 +208,8 @@ watch(locale, () => {
 .lang-trigger {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
   height: 34px;
-  padding: 0 12px 0 10px;
+  padding: 0 13px;
   border: 1.5px solid var(--control-border);
   border-radius: var(--radius);
   background: var(--surface-glass);
@@ -198,18 +234,9 @@ watch(locale, () => {
   transform: translateY(1px);
 }
 
-.lang-icon {
-  width: 15px;
-  height: 15px;
+.lang-word {
+  display: block;
   flex: none;
-}
-
-.lang-code {
-  font-weight: 600;
-  max-width: 5.5em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .lang-menu {
