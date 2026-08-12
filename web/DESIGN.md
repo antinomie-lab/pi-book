@@ -28,9 +28,11 @@
 | `--accent` | `#1d4fd7` | π 蓝，唯一彩色 |
 | `--accent-soft` | `rgba(29,79,215,.08)` | 行内代码底色 |
 | `--radius` | `999px` | 全圆角（胶囊/圆） |
-| `--mono` / `--sans` / `--serif` | SF Mono… / Inter+PingFang… / Source Han Serif+宋体… | 代码 / 正文 / 标题 |
+| `--mono` / `--sans` / `--serif` | SF Mono… / MiSans / Source Han Serif+宋体… | 代码 / 正文 / 标题 |
 
 排版基调：正文 16px / 行高 1.85，阅读栏 `max-width: 720px` 居中。标题用衬线（书感），正文用无衬线，代码用等宽——三套字体各司其职，不混用。
+
+正文字体是 **MiSans**（Medium 380 正文 / Bold 630 强调，中西文同族，三语言一套设计）：webfont 自托管于 `public/fonts/misans/`（`misans` npm 包的 unicode-range 子集，浏览器只下载用到的切片），`index.html` 直接 link 包自带的 css。系统字体栈作为兜底。正文不写 `-webkit-font-smoothing: antialiased`——它会把 Mac 上的中文笔画削细。选型时对比过：PingFang/系统栈（跨端不一致）、Noto Sans SC（和 PingFang 差异太小）、Noto Serif SC 宋体（书感但和极简轨道有张力）、霞鹜文楷（性格太强）、HarmonyOS Sans（与 MiSans 同路，二选一）。
 
 ## 3. 圆词汇表：层级即圆的分数
 
