@@ -15,28 +15,40 @@ const { locale, locales, t, setLocale } = useLocale();
  * driver on a raw path; fill-rule evenodd keeps counters hollow
  * regardless of how the engine reorders vertices mid-flight */
 const wordRef = ref(null);
-const box = ref({ ...LANG_WORDS[locale.value] });
 const initialD = LANG_WORDS[locale.value].d;
 let morph = null;
-let boxTween = null;
 
-/* the pill glides to the new word's width alongside the spring */
-function tweenBox(target) {
-  if (boxTween) cancelAnimationFrame(boxTween);
-  const from = { ...box.value };
+/* the pill never resizes: the svg spans the widest word, and only the
+ * viewBox x-offset glides — the morphing word stays centred while the
+ * button itself never moves */
+const BOX = ["zh", "en", "es"].reduce(
+  (acc, k) => {
+    const w = LANG_WORDS[k];
+    return {
+      w: Math.max(acc.w, w.w),
+      minY: Math.min(acc.minY, w.minY),
+      h: Math.max(acc.h, w.h),
+    };
+  },
+  { w: 0, minY: 0, h: 0 },
+);
+
+const centerOff = (code) => -(BOX.w - LANG_WORDS[code].w) / 2;
+const offX = ref(centerOff(locale.value));
+let offTween = null;
+
+function tweenOff(target) {
+  if (offTween) cancelAnimationFrame(offTween);
+  const from = offX.value;
   const t0 = performance.now();
   const DUR = 450;
   const step = (now) => {
     const p = Math.min(1, (now - t0) / DUR);
     const e = 1 - Math.pow(1 - p, 3);
-    box.value = {
-      w: from.w + (target.w - from.w) * e,
-      minY: from.minY + (target.minY - from.minY) * e,
-      h: from.h + (target.h - from.h) * e,
-    };
-    if (p < 1) boxTween = requestAnimationFrame(step);
+    offX.value = from + (target - from) * e;
+    if (p < 1) offTween = requestAnimationFrame(step);
   };
-  boxTween = requestAnimationFrame(step);
+  offTween = requestAnimationFrame(step);
 }
 
 function cycle() {
@@ -50,14 +62,14 @@ onMounted(() => {
 });
 onUnmounted(() => {
   morph?.destroy();
-  if (boxTween) cancelAnimationFrame(boxTween);
+  if (offTween) cancelAnimationFrame(offTween);
 });
 
 watch(locale, (code) => {
   const target = LANG_WORDS[code];
   if (target) {
     morph?.morphTo(target.d, "smooth");
-    tweenBox(target);
+    tweenOff(centerOff(code));
   }
 });
 </script>
@@ -72,9 +84,9 @@ watch(locale, (code) => {
   >
     <svg
       class="lang-word"
-      :width="box.w"
-      :height="box.h"
-      :viewBox="`0 ${box.minY} ${box.w} ${box.h}`"
+      :width="BOX.w"
+      :height="BOX.h"
+      :viewBox="`${offX} ${BOX.minY} ${BOX.w} ${BOX.h}`"
       aria-hidden="true"
     >
       <path
