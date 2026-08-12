@@ -1342,7 +1342,7 @@ That means you can safely write to a database in an `agent_end` listener—the l
 
 The full path of one `prompt()`:
 
-```
+```diagram-runflow
 prompt() → runPromptMessages → runWithLifecycle → runAgentLoop(snapshot, assembly) → runLoop
   ├─ transformContext → convertToLlm → streamFn (streaming)
   ├─ prepare → execute → finalize (three-stage tool pipeline)

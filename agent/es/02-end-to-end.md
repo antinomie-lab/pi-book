@@ -1342,7 +1342,7 @@ Eso significa que puedes escribir a la base de datos con tranquilidad en un list
 
 El recorrido completo de un `prompt()`:
 
-```
+```diagram-runflow
 prompt() → runPromptMessages → runWithLifecycle → runAgentLoop(snapshot, ensamblaje) → runLoop
   ├─ transformContext → convertToLlm → streamFn (streaming)
   ├─ prepare → execute → finalize (tubería de herramientas en tres tramos)

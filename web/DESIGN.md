@@ -118,6 +118,7 @@
 - 首个实例：`diagram-filemap`（01 章文件全貌图，`src/components/diagrams/DiagramFileMap.vue`）——hover 芯片出 caption（模块说明 + 所在章节），点击跳章；无 hover 时 caption 显示这张图本身是什么（`captionDefault`），不留上一个模块的半截描述，滚动即复位。**图内灰字分两档**：承载语义的注记（边界说明、"只有类型 + StreamFn 形状"、idle caption 的主句）用 `--ink-soft`——它们是要被读的；纯定位元数据（包名标签、行数、芯片徽章、操作提示）用 `--ink-faint`。
 - **组件库**：所有 `diagram-*` 组件、图形原语和图表排版集中在 `src/components/diagrams/`（`DiagramArrow`——`len` 定长、`dir` 定向、`dashed` 标记编译期擦除的边，颜色吃 `currentColor` 由父级染色；`DiagramEdgeH`/`DiagramEdgeV` 流式连接——柄部填满轨道，长度即真实距离；`tables.css` 表格寄存——booktabs 式只画横线、表头小号淡灰、首列不折行，由 `Chapter.vue` 引入一次），不进站点全局样式。
 - 第二个实例：`diagram-deps`（01 章依赖方向图，`DiagramDeps.vue`）——主角是边不是节点：节点用纯等宽文字（不套芯片，不暗示交互），跨边界的两条边是全图论点——类型导入画虚线（编译后擦除），唯一的值导入 `runAgentLoop` 用全站唯一的蓝（蓝色属于循环本身）。无边注记独占一行 grid 行，与节点中线严格对齐。
+- 第三个实例：`diagram-runflow`（02 章调用流程图，`DiagramRunflow.vue`，SVG）——**循环必须画成环**：ASCII 把两层循环压成直线加树杈，恰恰丢掉了流程的灵魂。`runLoop` 是一个真实圆环（环心标注"一圈 = 一个 turn"），步骤沿顺时针分布：streamFn（带蓝珠，呼应章头轨道）→ 工具三段管线 → turn_end → 四个决策问句（空心点，与实心站点分开）沿左侧上行；follow-up 说"是"走外圈弧回顶端（"再来一圈"），全否从底部出环。入口链的下降走廊用 `getBBox()` 实测文本宽度定位（各语长度不同），出口链居中且不带前导箭头（下坠箭头即"→"，长语言不溢出）。**教训：第一版照抄 ASCII 的线性记谱，立刻输给 ASCII——组件化之前先问"纯文本做不到的到底是什么"；这张图的答案是"循环的形状"，而不是把字符画得更精。**
 
 ## 9. 文案与语气
 

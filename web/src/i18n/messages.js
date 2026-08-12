@@ -69,6 +69,15 @@ export const messages = {
       agentNote: "循环的一种包装",
       captionDefault: "依赖方向图 · 箭头全部指向上游；唯一跨过边界的值，是循环本身",
     },
+    /* diagram-runflow: the call-flow figure (chapter 02) */
+    runflow: {
+      snapAssembly: "（快照，装配）",
+      streaming: "（流式）",
+      toolPipeline: "（工具三段管线）",
+      outerLap: "再来一圈",
+      awaitListeners: "await 所有监听器",
+      centerSub: "一圈 = 一个 turn",
+    },
   },
   en: {
     brand: "pi-agent book",
@@ -138,6 +147,14 @@ export const messages = {
       valueEdgeNotePost: "",
       agentNote: "one wrapper around the loop",
       captionDefault: "Dependency directions · every arrow points upstream; the only value that crosses the boundary is the loop itself",
+    },
+    runflow: {
+      snapAssembly: "(snapshot, assembly)",
+      streaming: "(streaming)",
+      toolPipeline: "(three-stage tool pipeline)",
+      outerLap: "another lap",
+      awaitListeners: "await all listeners",
+      centerSub: "one lap = one turn",
     },
   },
   es: {
@@ -214,6 +231,14 @@ export const messages = {
       valueEdgeNotePost: "",
       agentNote: "una envoltura del bucle",
       captionDefault: "Direcciones de dependencia · todas las flechas apuntan río arriba; el único valor que cruza la frontera es el bucle mismo",
+    },
+    runflow: {
+      snapAssembly: "(snapshot, ensamblaje)",
+      streaming: "(streaming)",
+      toolPipeline: "(tubería de herramientas en tres tramos)",
+      outerLap: "otra vuelta",
+      awaitListeners: "await de todos los listeners",
+      centerSub: "una vuelta = un turn",
     },
   },
 };
