@@ -29,7 +29,7 @@
   color-scheme: light;
   --mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
   --sans:
-    "Inter", -apple-system, "PingFang SC", "Hiragino Sans GB",
+    "MiSansLatin", "MiSans", -apple-system, "PingFang SC", "Hiragino Sans GB",
     "Microsoft YaHei", "Noto Sans SC", sans-serif;
   --serif: "Source Han Serif SC", "Noto Serif SC", "Songti SC", Georgia, serif;
   --radius: 999px;
@@ -37,7 +37,7 @@
 
 :root[data-locale="en"],
 :root[data-locale="es"] {
-  --sans: "Inter", -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --sans: "MiSansLatin", "MiSans", -apple-system, "Segoe UI", Roboto, sans-serif;
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
 }
 
@@ -88,7 +88,8 @@ body {
   font-family: var(--sans);
   font-size: 16px;
   line-height: 1.85;
-  -webkit-font-smoothing: antialiased;
+  /* no -webkit-font-smoothing: antialiased — it thins CJK strokes on
+   * macOS; the default renderer keeps MiSans's weight honest */
   transition:
     background-color 0.35s ease,
     color 0.35s ease;
