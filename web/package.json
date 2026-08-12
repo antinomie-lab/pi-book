@@ -6,16 +6,19 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:words": "node scripts/compile-lang-words.mjs"
   },
   "dependencies": {
     "highlight.js": "^11.11.1",
     "markdown-it": "^14.1.0",
+    "morphicons": "^1.4.2",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
+    "fontkit": "^2.0.4",
     "vite": "^6.0.7"
   }
 }

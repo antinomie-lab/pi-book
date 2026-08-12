@@ -1,186 +1,115 @@
 <script setup>
 /**
- * Language menu adapted from trove/cn Menu + Button primitives
- * (https://www.trovecn.dev/docs/components/menu): icon trigger, radio group
- * for the active locale, spring-ish popup. Built in Vue to match this reader.
+ * Language switcher: the current locale's own name as glyph outlines
+ * (中文 / English / Español). One click cycles to the next locale and
+ * the word flows into it — the morph is the feedback, no menu needed.
  */
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { onMounted, onUnmounted, ref, watch } from "vue";
 import { useLocale } from "../i18n/locale.js";
+import { createMorph } from "morphicons/dom";
+import { LANG_WORDS } from "../i18n/lang-words.js";
 
 const { locale, locales, t, setLocale } = useLocale();
 
-const open = ref(false);
-const rootRef = ref(null);
-const menuRef = ref(null);
-const triggerRef = ref(null);
-const activeIndex = ref(-1);
+/* the label is rendered from compiled outlines via morphicons' dom
+ * driver on a raw path; fill-rule evenodd keeps counters hollow
+ * regardless of how the engine reorders vertices mid-flight */
+const wordRef = ref(null);
+const initialD = LANG_WORDS[locale.value].d;
+let morph = null;
 
-const currentLabel = computed(
-  () => locales.find((l) => l.code === locale.value)?.native ?? locale.value,
+/* the pill never resizes: the svg spans the widest word, and only the
+ * viewBox x-offset glides — the morphing word stays centred while the
+ * button itself never moves */
+const BOX = ["zh", "en", "es"].reduce(
+  (acc, k) => {
+    const w = LANG_WORDS[k];
+    return {
+      w: Math.max(acc.w, w.w),
+      minY: Math.min(acc.minY, w.minY),
+      h: Math.max(acc.h, w.h),
+    };
+  },
+  { w: 0, minY: 0, h: 0 },
 );
 
-function close() {
-  open.value = false;
-  activeIndex.value = -1;
+const centerOff = (code) => -(BOX.w - LANG_WORDS[code].w) / 2;
+const offX = ref(centerOff(locale.value));
+let offTween = null;
+
+function tweenOff(target) {
+  if (offTween) cancelAnimationFrame(offTween);
+  const from = offX.value;
+  const t0 = performance.now();
+  const DUR = 450;
+  const step = (now) => {
+    const p = Math.min(1, (now - t0) / DUR);
+    const e = 1 - Math.pow(1 - p, 3);
+    offX.value = from + (target - from) * e;
+    if (p < 1) offTween = requestAnimationFrame(step);
+  };
+  offTween = requestAnimationFrame(step);
 }
 
-function focusItem(index) {
-  activeIndex.value = index;
-  menuRef.value?.querySelectorAll('[role="menuitemradio"]')[index]?.focus();
-}
-
-function toggle() {
-  open.value = !open.value;
-  if (open.value) {
-    // menu radio pattern: focus lands on the checked item
-    const checked = locales.findIndex((l) => l.code === locale.value);
-    nextTick(() => focusItem(checked === -1 ? 0 : checked));
-  }
-}
-
-function pick(code) {
-  setLocale(code);
-  close();
-  triggerRef.value?.focus();
-}
-
-function onDocPointer(e) {
-  if (!open.value) return;
-  if (rootRef.value && !rootRef.value.contains(e.target)) close();
-}
-
-function onKeydown(e) {
-  if (!open.value) {
-    if (
-      (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") &&
-      document.activeElement === triggerRef.value
-    ) {
-      e.preventDefault();
-      toggle();
-    }
-    return;
-  }
-
-  if (e.key === "Escape") {
-    e.preventDefault();
-    close();
-    triggerRef.value?.focus();
-    return;
-  }
-
-  if (e.key === "Tab") {
-    close();
-    return;
-  }
-
-  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-    e.preventDefault();
-    const delta = e.key === "ArrowDown" ? 1 : -1;
-    const next = (activeIndex.value + delta + locales.length) % locales.length;
-    focusItem(next);
-    return;
-  }
-
-  if (e.key === "Home" || e.key === "End") {
-    e.preventDefault();
-    focusItem(e.key === "Home" ? 0 : locales.length - 1);
-    return;
-  }
-
-  if (e.key === "Enter" || e.key === " ") {
-    e.preventDefault();
-    const item = locales[activeIndex.value];
-    if (item) pick(item.code);
-  }
+function cycle() {
+  const i = locales.findIndex((l) => l.code === locale.value);
+  const next = locales[(i + 1) % locales.length];
+  if (next) setLocale(next.code);
 }
 
 onMounted(() => {
-  document.addEventListener("pointerdown", onDocPointer);
-  document.addEventListener("keydown", onKeydown);
+  morph = createMorph(wordRef.value, initialD);
 });
 onUnmounted(() => {
-  document.removeEventListener("pointerdown", onDocPointer);
-  document.removeEventListener("keydown", onKeydown);
+  morph?.destroy();
+  if (offTween) cancelAnimationFrame(offTween);
 });
 
-watch(locale, () => {
-  // keep menu selection in sync if locale changes elsewhere
-  activeIndex.value = locales.findIndex((l) => l.code === locale.value);
+watch(locale, (code) => {
+  const target = LANG_WORDS[code];
+  if (target) {
+    morph?.morphTo(target.d, "smooth");
+    tweenOff(centerOff(code));
+  }
 });
 </script>
 
 <template>
-  <div ref="rootRef" class="lang-switch">
-    <button
-      ref="triggerRef"
-      type="button"
-      class="lang-trigger"
-      :aria-label="t.languageMenu"
-      :title="t.languageMenu"
-      aria-haspopup="menu"
-      :aria-expanded="open"
-      @click="toggle"
+  <button
+    type="button"
+    class="lang-trigger"
+    :aria-label="t.languageMenu"
+    :title="t.languageMenu"
+    @click="cycle"
+  >
+    <svg
+      class="lang-word"
+      :width="BOX.w"
+      :height="BOX.h"
+      :viewBox="`${offX} ${BOX.minY} ${BOX.w} ${BOX.h}`"
+      aria-hidden="true"
     >
-      <svg class="lang-icon" viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.6" />
-        <path
-          d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.6"
-        />
-      </svg>
-      <span class="lang-code">{{ currentLabel }}</span>
-    </button>
-
-    <Transition name="lang-pop">
-      <div
-        v-if="open"
-        ref="menuRef"
-        class="lang-menu"
-        role="menu"
-        :aria-label="t.language"
-      >
-        <button
-          v-for="(item, i) in locales"
-          :key="item.code"
-          type="button"
-          class="lang-item"
-          role="menuitemradio"
-          :aria-checked="item.code === locale"
-          :tabindex="i === activeIndex ? 0 : -1"
-          @mouseenter="activeIndex = i"
-          @click="pick(item.code)"
-        >
-          <span class="lang-radio" aria-hidden="true">
-            <span v-if="item.code === locale" class="lang-radio-dot"></span>
-          </span>
-          <span class="lang-native">{{ item.native }}</span>
-          <span class="lang-short">{{ item.code.toUpperCase() }}</span>
-        </button>
-      </div>
-    </Transition>
-  </div>
+      <path
+        ref="wordRef"
+        fill="currentColor"
+        fill-rule="evenodd"
+        :d="initialD"
+      />
+    </svg>
+  </button>
 </template>
 
 <style scoped>
-.lang-switch {
-  position: relative;
-}
-
 .lang-trigger {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
   height: 34px;
-  padding: 0 12px 0 10px;
+  padding: 0 13px;
   border: 1.5px solid var(--control-border);
   border-radius: var(--radius);
   background: var(--surface-glass);
   backdrop-filter: blur(8px);
   color: var(--ink);
-  font-size: 12px;
-  letter-spacing: 0.04em;
   cursor: pointer;
   transition:
     border-color 0.25s,
@@ -188,8 +117,7 @@ watch(locale, () => {
     transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.lang-trigger:hover,
-.lang-trigger[aria-expanded="true"] {
+.lang-trigger:hover {
   border-color: var(--ink);
   background: var(--surface);
 }
@@ -198,103 +126,8 @@ watch(locale, () => {
   transform: translateY(1px);
 }
 
-.lang-icon {
-  width: 15px;
-  height: 15px;
+.lang-word {
+  display: block;
   flex: none;
-}
-
-.lang-code {
-  font-weight: 600;
-  max-width: 5.5em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.lang-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  z-index: 80;
-  min-width: 168px;
-  padding: 6px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--surface);
-  box-shadow: 0 18px 40px -22px var(--shadow-strong);
-  transform-origin: top right;
-}
-
-.lang-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--ink);
-  font-size: 13px;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.lang-item:hover,
-.lang-item:focus-visible {
-  background: var(--accent-soft);
-  outline: none;
-}
-
-.lang-item[aria-checked="true"] {
-  color: var(--accent);
-}
-
-.lang-radio {
-  width: 14px;
-  height: 14px;
-  border: 1.5px solid var(--control-border);
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  flex: none;
-}
-
-.lang-item[aria-checked="true"] .lang-radio {
-  border-color: var(--accent);
-}
-
-.lang-radio-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-}
-
-.lang-native {
-  flex: 1;
-  font-weight: 600;
-}
-
-.lang-short {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  color: var(--ink-faint);
-}
-
-.lang-pop-enter-active,
-.lang-pop-leave-active {
-  transition:
-    opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.lang-pop-enter-from,
-.lang-pop-leave-to {
-  opacity: 0;
-  transform: scale(0.92) translateY(-4px);
 }
 </style>
