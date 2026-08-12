@@ -10,6 +10,7 @@ import { getChapter, getChapters } from "../chapters";
 import { useLocale } from "../i18n/locale.js";
 import DiagramFileMap from "../components/diagrams/DiagramFileMap.vue";
 import DiagramDeps from "../components/diagrams/DiagramDeps.vue";
+import DiagramRunflow from "../components/diagrams/DiagramRunflow.vue";
 /* the engine library also owns the table register (ADR-0001) */
 import "../components/diagrams/tables.css";
 
@@ -39,6 +40,7 @@ const md = new MarkdownIt({
 const DIAGRAM_COMPONENTS = {
   "diagram-filemap": DiagramFileMap,
   "diagram-deps": DiagramDeps,
+  "diagram-runflow": DiagramRunflow,
 };
 
 const defaultFence = md.renderer.rules.fence;

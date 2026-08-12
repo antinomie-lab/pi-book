@@ -1342,7 +1342,7 @@ private finishRun(): void {
 
 一次 `prompt()` 的全程：
 
-```
+```diagram-runflow
 prompt() → runPromptMessages → runWithLifecycle → runAgentLoop(快照, 装配) → runLoop
   ├─ transformContext → convertToLlm → streamFn（流式）
   ├─ prepare → execute → finalize（工具三段管线）
