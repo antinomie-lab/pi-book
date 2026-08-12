@@ -491,10 +491,11 @@ pre .hljs-comment a.src-ref:hover {
 
 .pin-btn svg {
   position: absolute;
-  top: 4px;
-  left: 4px;
+  top: 50%;
+  left: 50%;
   width: 14px;
   height: 14px;
+  transform: translate(-50%, -50%);
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
